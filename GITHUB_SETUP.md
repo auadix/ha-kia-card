@@ -11,7 +11,7 @@ Follow these steps to publish your Kia Vehicle Card to GitHub and make it availa
    - Or click the "+" icon → "New repository"
 
 2. **Repository Settings**
-   - **Name**: `kia-vehicle-card`
+   - **Name**: `ha-kia-card`
    - **Description**: "A beautiful Lovelace card for Kia and Hyundai vehicles"
    - **Visibility**: Public ✓ (required for HACS)
    - **DO NOT** initialize with README (we already have one)
@@ -24,10 +24,10 @@ Follow these steps to publish your Kia Vehicle Card to GitHub and make it availa
 After creating the repository, GitHub will show you commands. Use these:
 
 ```bash
-cd /Users/auad/Projects/kia-vehicle-card
+cd /Users/auad/Projects/ha-kia-card
 
-# Add remote (replace YOUR_USERNAME with your GitHub username)
-git remote add origin https://github.com/YOUR_USERNAME/kia-vehicle-card.git
+# Add remote (replace auadix with your GitHub username)
+git remote add origin https://github.com/auadix/ha-kia-card.git
 
 # Push code
 git push -u origin main
@@ -38,7 +38,7 @@ git push origin v2.7.0
 
 **Alternative with SSH:**
 ```bash
-git remote add origin git@github.com:YOUR_USERNAME/kia-vehicle-card.git
+git remote add origin git@github.com:auadix/ha-kia-card.git
 git push -u origin main
 git push origin v2.7.0
 ```
@@ -80,7 +80,7 @@ git push origin v2.7.0
 - Home Assistant >= 2023.1.0
 
 ### 📦 Installation
-See [INSTALLATION.md](https://github.com/YOUR_USERNAME/kia-vehicle-card/blob/main/INSTALLATION.md) for details.
+See [INSTALLATION.md](https://github.com/auadix/ha-kia-card/blob/main/INSTALLATION.md) for details.
 
 ### 🐛 Bug Fixes
 None in this release (feature-focused update)
@@ -90,11 +90,11 @@ None in this release (feature-focused update)
 
 ---
 
-**Full Changelog**: https://github.com/YOUR_USERNAME/kia-vehicle-card/commits/v2.7.0
+**Full Changelog**: https://github.com/auadix/ha-kia-card/commits/v2.7.0
 ```
 
 3. **Attach Files** (optional but recommended)
-   - Attach `kia-vehicle-card.js` as a release asset
+   - Attach `ha-kia-card.js` as a release asset
 
 4. **Publish**
    - Click "Publish release"
@@ -118,13 +118,13 @@ This helps with documentation:
 After creating the repository, update these placeholders in README.md:
 
 Find and replace:
-- `YOUR_USERNAME` → Your actual GitHub username
+- `auadix` → Your actual GitHub username
 - Update badge URLs
 - Update screenshot placeholders
 
 ```bash
 # Edit README.md
-# Replace YOUR_USERNAME with your actual username
+# Replace auadix with your actual username
 # Then commit:
 git add README.md
 git commit -m "Update README with correct GitHub URLs"
@@ -148,8 +148,8 @@ git push
    {
      "name": "Kia Vehicle Card",
      "description": "A beautiful Lovelace card for Kia and Hyundai vehicles",
-     "domain": "https://github.com/YOUR_USERNAME/kia-vehicle-card",
-     "authors": ["YOUR_USERNAME"]
+     "domain": "https://github.com/auadix/ha-kia-card",
+     "authors": ["auadix"]
    }
    ```
 
@@ -164,7 +164,7 @@ Users can add your repository manually:
 
 1. Open HACS → Frontend
 2. Click ⋮ menu → Custom repositories
-3. Add: `https://github.com/YOUR_USERNAME/kia-vehicle-card`
+3. Add: `https://github.com/auadix/ha-kia-card`
 4. Category: Lovelace
 5. Click Add
 
@@ -191,7 +191,7 @@ Make your repository discoverable:
 
 When you make updates:
 
-1. **Update version** in `kia-vehicle-card.js`
+1. **Update version** in `ha-kia-card.js`
 2. **Commit changes**
    ```bash
    git add .
@@ -220,7 +220,7 @@ After setup, verify:
 - [ ] Repository is public
 - [ ] README displays correctly
 - [ ] Release v2.7.0 exists with tag
-- [ ] `kia-vehicle-card.js` file is in root
+- [ ] `ha-kia-card.js` file is in root
 - [ ] `hacs.json` file exists
 - [ ] Topics/tags are added
 - [ ] License file exists (MIT)

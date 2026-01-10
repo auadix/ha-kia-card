@@ -4,14 +4,14 @@
 
 A complete, HACS-ready repository for the Kia Vehicle Card!
 
-**Location:** `/Users/auad/Projects/kia-vehicle-card/`
+**Location:** `/Users/auad/Projects/ha-kia-card/`
 
 ---
 
 ## 📁 Repository Structure
 
 ```
-kia-vehicle-card/
+ha-kia-card/
 ├── .git/                      # Git repository
 ├── .gitignore                 # Git ignore file
 ├── CHANGELOG.md               # Version history
@@ -22,7 +22,7 @@ kia-vehicle-card/
 ├── README.md                  # Main documentation
 ├── hacs.json                  # HACS configuration
 ├── info.md                    # HACS info panel
-└── kia-vehicle-card.js        # The actual card (v2.7.0)
+└── ha-kia-card.js        # The actual card (v2.7.0)
 ```
 
 ---
@@ -48,7 +48,7 @@ kia-vehicle-card/
 
 ### Core Files
 
-#### `kia-vehicle-card.js`
+#### `ha-kia-card.js`
 - The actual Lovelace card
 - Version: 2.7.0
 - Size: ~70 KB
@@ -60,7 +60,7 @@ HACS configuration file:
 {
   "name": "Kia Vehicle Card",
   "content_in_root": false,
-  "filename": "kia-vehicle-card.js",
+  "filename": "ha-kia-card.js",
   "render_readme": true,
   "homeassistant": "2023.1.0"
 }
@@ -74,7 +74,7 @@ HACS configuration file:
 - Configuration examples
 - Troubleshooting
 - Screenshots placeholders (need to add real screenshots)
-- **ACTION NEEDED:** Replace `YOUR_USERNAME` with actual GitHub username
+- **ACTION NEEDED:** Replace `auadix` with actual GitHub username
 
 #### `INSTALLATION.md`
 - Step-by-step HACS installation
@@ -118,7 +118,7 @@ HACS configuration file:
 ```bash
 # On GitHub.com:
 # 1. Go to https://github.com/new
-# 2. Name: kia-vehicle-card
+# 2. Name: ha-kia-card
 # 3. Public repository
 # 4. Don't initialize with README
 # 5. Create repository
@@ -127,10 +127,10 @@ HACS configuration file:
 ### 2. Push to GitHub
 
 ```bash
-cd /Users/auad/Projects/kia-vehicle-card
+cd /Users/auad/Projects/ha-kia-card
 
-# Add remote (replace YOUR_USERNAME)
-git remote add origin https://github.com/YOUR_USERNAME/kia-vehicle-card.git
+# Add remote (replace auadix)
+git remote add origin https://github.com/auadix/ha-kia-card.git
 
 # Push code
 git push -u origin main
@@ -151,7 +151,7 @@ git push origin v2.7.0
 ### 4. Update README
 
 Before or after pushing, update `README.md`:
-- Replace `YOUR_USERNAME` with your GitHub username
+- Replace `auadix` with your GitHub username
 - Add real screenshots (optional but recommended)
 - Update image placeholder URLs
 
@@ -166,7 +166,7 @@ Before or after pushing, update `README.md`:
 **Option B: Users Add Manually**
 - Users go to HACS → Frontend
 - Add custom repository
-- URL: https://github.com/YOUR_USERNAME/kia-vehicle-card
+- URL: https://github.com/auadix/ha-kia-card
 - Category: Lovelace
 
 ---
@@ -176,7 +176,7 @@ Before or after pushing, update `README.md`:
 ### Required for HACS ✅
 - [x] Public repository
 - [x] `hacs.json` file present
-- [x] Main file (`kia-vehicle-card.js`) in root
+- [x] Main file (`ha-kia-card.js`) in root
 - [x] Valid LICENSE file
 - [x] README.md with documentation
 - [x] Git tags for releases
@@ -256,7 +256,7 @@ After publishing to GitHub:
 
 ### For Future Updates
 
-1. Update version in `kia-vehicle-card.js`
+1. Update version in `ha-kia-card.js`
 2. Update `CHANGELOG.md`
 3. Commit changes
 4. Create and push new tag
@@ -265,7 +265,7 @@ After publishing to GitHub:
 
 ### Example:
 ```bash
-# Make changes to kia-vehicle-card.js
+# Make changes to ha-kia-card.js
 # Update version to 2.8.0
 
 git add .

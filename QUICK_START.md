@@ -6,7 +6,7 @@
 
 1. Go to **https://github.com/new**
 2. Set these values:
-   - **Repository name**: `kia-vehicle-card`
+   - **Repository name**: `ha-kia-card`
    - **Description**: "A beautiful Lovelace card for Kia and Hyundai vehicles"
    - **Public** ✓
    - **Don't** initialize with anything
@@ -17,10 +17,10 @@
 Copy the commands GitHub shows you, or use these:
 
 ```bash
-cd /Users/auad/Projects/kia-vehicle-card
+cd /Users/auad/Projects/ha-kia-card
 
-# Replace YOUR_USERNAME with your GitHub username!
-git remote add origin https://github.com/YOUR_USERNAME/kia-vehicle-card.git
+# Replace auadix with your GitHub username!
+git remote add origin https://github.com/auadix/ha-kia-card.git
 
 git push -u origin main
 git push origin v2.7.0
@@ -31,9 +31,9 @@ git push origin v2.7.0
 Before people start using it, quickly update:
 
 ```bash
-# Find and replace YOUR_USERNAME in README.md with your actual username
+# Find and replace auadix in README.md with your actual username
 # Can do manually or:
-sed -i '' 's/YOUR_USERNAME/your-actual-username/g' README.md
+sed -i '' 's/auadix/your-actual-username/g' README.md
 git add README.md
 git commit -m "Update README with correct URLs"
 git push
@@ -63,14 +63,14 @@ A beautiful, modern Lovelace card for Kia and Hyundai vehicles.
 - Modern dark-themed design
 
 ### 📦 Installation
-See [INSTALLATION.md](https://github.com/YOUR_USERNAME/kia-vehicle-card/blob/main/INSTALLATION.md)
+See [INSTALLATION.md](https://github.com/auadix/ha-kia-card/blob/main/INSTALLATION.md)
 
 ### 🔧 Requirements
 - hyundai_kia_connect_api >= v3.54.0
 - kia_uvo >= v2.49.0
 
 ---
-**Full documentation**: [README.md](https://github.com/YOUR_USERNAME/kia-vehicle-card/blob/main/README.md)
+**Full documentation**: [README.md](https://github.com/auadix/ha-kia-card/blob/main/README.md)
 ```
 
 ## ✅ Done!
@@ -81,7 +81,7 @@ Your card is now **publicly available**!
 
 Users can now install via HACS:
 1. HACS → Frontend → ⋮ → Custom repositories
-2. Add: `https://github.com/YOUR_USERNAME/kia-vehicle-card`
+2. Add: `https://github.com/auadix/ha-kia-card`
 3. Category: Lovelace
 4. Install!
 
@@ -98,8 +98,8 @@ Want it in the default HACS store? (Takes a few days for approval)
 {
   "name": "Kia Vehicle Card",
   "description": "A beautiful Lovelace card for Kia and Hyundai vehicles",
-  "domain": "https://github.com/YOUR_USERNAME/kia-vehicle-card",
-  "authors": ["YOUR_USERNAME"]
+  "domain": "https://github.com/auadix/ha-kia-card",
+  "authors": ["auadix"]
 }
 ```
 4. Commit and create Pull Request
@@ -145,4 +145,4 @@ Once tested, share with the community:
 
 **That's it! You've published an open-source Home Assistant card! 🎉**
 
-Repository: https://github.com/YOUR_USERNAME/kia-vehicle-card
+Repository: https://github.com/auadix/ha-kia-card

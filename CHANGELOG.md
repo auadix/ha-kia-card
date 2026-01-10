@@ -104,6 +104,6 @@ See [TODO.md](TODO.md) for planned features in upcoming releases.
 
 ---
 
-[2.7.0]: https://github.com/YOUR_USERNAME/kia-vehicle-card/releases/tag/v2.7.0
-[2.6.0]: https://github.com/YOUR_USERNAME/kia-vehicle-card/releases/tag/v2.6.0
-[2.5.0]: https://github.com/YOUR_USERNAME/kia-vehicle-card/releases/tag/v2.5.0
+[2.7.0]: https://github.com/auadix/ha-kia-card/releases/tag/v2.7.0
+[2.6.0]: https://github.com/auadix/ha-kia-card/releases/tag/v2.6.0
+[2.5.0]: https://github.com/auadix/ha-kia-card/releases/tag/v2.5.0

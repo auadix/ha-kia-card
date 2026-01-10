@@ -15,7 +15,7 @@
 2. **Add Custom Repository**
    - Click the 3 dots menu (⋮) in the top right
    - Select "Custom repositories"
-   - Add repository URL: `https://github.com/YOUR_USERNAME/kia-vehicle-card`
+   - Add repository URL: `https://github.com/auadix/ha-kia-card`
    - Select category: "Lovelace"
    - Click "Add"
 
@@ -40,7 +40,7 @@
 ### Steps
 
 1. **Download the File**
-   - Go to the [latest release](https://github.com/YOUR_USERNAME/kia-vehicle-card/releases/latest)
+   - Go to the [latest release](https://github.com/auadix/ha-kia-card/releases/latest)
    - Download `kia-vehicle-card.js`
 
 2. **Copy to Home Assistant**
@@ -207,7 +207,7 @@ duration: 10
 
 ## Need Help?
 
-- **Documentation**: [README](https://github.com/YOUR_USERNAME/kia-vehicle-card#readme)
-- **Issues**: [GitHub Issues](https://github.com/YOUR_USERNAME/kia-vehicle-card/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/YOUR_USERNAME/kia-vehicle-card/discussions)
+- **Documentation**: [README](https://github.com/auadix/ha-kia-card#readme)
+- **Issues**: [GitHub Issues](https://github.com/auadix/ha-kia-card/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/auadix/ha-kia-card/discussions)
 - **Integration Support**: [Kia UVO](https://github.com/Hyundai-Kia-Connect/kia_uvo)

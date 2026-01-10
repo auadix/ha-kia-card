@@ -73,7 +73,7 @@ Displays alerts for:
 2. Click on "Frontend"
 3. Click the 3 dots in the top right corner
 4. Select "Custom repositories"
-5. Add this repository URL: `https://github.com/YOUR_USERNAME/kia-vehicle-card`
+5. Add this repository URL: `https://github.com/auadix/ha-kia-card`
 6. Select category: "Lovelace"
 7. Click "Add"
 8. Find "Kia Vehicle Card" in the list and click "Install"
@@ -81,7 +81,7 @@ Displays alerts for:
 
 ### Manual Installation
 
-1. Download `kia-vehicle-card.js` from the [latest release](https://github.com/YOUR_USERNAME/kia-vehicle-card/releases)
+1. Download `kia-vehicle-card.js` from the [latest release](https://github.com/auadix/ha-kia-card/releases)
 2. Copy it to `<config>/www/kia-vehicle-card.js`
 3. Add the resource in your Lovelace configuration:
 
@@ -229,8 +229,8 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## Support
 
-- **Issues**: [GitHub Issues](https://github.com/YOUR_USERNAME/kia-vehicle-card/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/YOUR_USERNAME/kia-vehicle-card/discussions)
+- **Issues**: [GitHub Issues](https://github.com/auadix/ha-kia-card/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/auadix/ha-kia-card/discussions)
 - **Integration Support**: [Kia UVO Integration](https://github.com/Hyundai-Kia-Connect/kia_uvo)
 
 ## Credits
@@ -247,4 +247,4 @@ MIT License - see LICENSE file for details
 
 **Enjoying this card?** Give it a ⭐ on GitHub!
 
-**Want more features?** Check out the [TODO list](https://github.com/YOUR_USERNAME/kia-vehicle-card/blob/main/TODO.md) or suggest new ones in [Discussions](https://github.com/YOUR_USERNAME/kia-vehicle-card/discussions)!
+**Want more features?** Check out the [TODO list](https://github.com/auadix/ha-kia-card/blob/main/TODO.md) or suggest new ones in [Discussions](https://github.com/auadix/ha-kia-card/discussions)!

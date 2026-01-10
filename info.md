@@ -35,4 +35,4 @@ device_id: your_device_id
 
 ## Documentation
 
-Full documentation available in the [README](https://github.com/YOUR_USERNAME/kia-vehicle-card#readme)
+Full documentation available in the [README](https://github.com/auadix/ha-kia-card#readme)
