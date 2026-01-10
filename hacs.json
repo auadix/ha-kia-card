@@ -1,0 +1,7 @@
+{
+  "name": "Kia Vehicle Card",
+  "content_in_root": false,
+  "filename": "kia-vehicle-card.js",
+  "render_readme": true,
+  "homeassistant": "2023.1.0"
+}
