@@ -248,17 +248,21 @@ class KiaVehicleCard extends HTMLElement {
       // Climate
       setTemp: getVal(this.getState(`sensor.${vid}_set_temperature`)),
 
-      // Comfort / Heating
-      steeringWheelHeater: getBool(`binary_sensor.${vid}_steering_wheel_heater`),
-      sideMirrorHeater: getBool(`binary_sensor.${vid}_side_mirror_heater`),
-      rearWindowHeater: getBool(`binary_sensor.${vid}_back_window_heater`),
+      // Comfort / Heating - read from raw API data (more accurate than binary sensors)
+      ...(() => {
+        const heatingData = this._hass.states[`sensor.${vid}_data`]?.attributes?.vehicle_data?.lastVehicleInfo?.vehicleStatusRpt?.vehicleStatus?.climate?.heatingAccessory;
+        return {
+          steeringWheelHeater: heatingData?.steeringWheel > 0,
+          sideMirrorHeater: heatingData?.sideMirror > 0,
+          rearWindowHeater: heatingData?.rearWindow > 0,
+        };
+      })(),
       // Seats (from data attribute as they are complex objects)
       seatStatus: (() => {
         const data = this._hass.states[`sensor.${vid}_data`]?.attributes?.vehicle_data?.lastVehicleInfo?.vehicleStatusRpt?.vehicleStatus?.climate?.heatVentSeat;
         if (!data) return null;
-        // 0=off, 1=wait? usually 1-3 is level. heatVentType: 0=none?, 1=Heat, 2=Vent? 
-        // Based on API: heatVentType 0/1/2/3? Need to handle robustly.
-        // Let's assume non-zero level implies active.
+        // heatVentType: 0=Off, 1=Heat, 2=Cool/Vent
+        // heatVentLevel: 0=Off, 1-3=Level
         return {
           driver: data.driverSeat,
           passenger: data.passengerSeat,
