@@ -1,7 +1,7 @@
 /**
  * Kia Vehicle Card for Home Assistant
  * A modern, comprehensive card for Kia/Hyundai vehicles
- * Version: 2.9.0
+ * Version: 2.9.1
  *
  * Features:
  * - MDI icons (no emojis)
