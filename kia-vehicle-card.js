@@ -1453,7 +1453,15 @@ class KiaVehicleCard extends HTMLElement {
           </div>
           
           <!-- Comfort Status Row - Only show when climate/defrost is actually running -->
-          ${(data.airCon || data.defrost) && (data.steeringWheelHeater || data.sideMirrorHeater || data.rearWindowHeater || (data.seatStatus && (data.seatStatus.driver?.heatVentLevel > 0 || data.seatStatus.passenger?.heatVentLevel > 0))) ? `
+          ${(() => {
+            // Helper to check if seat is actually active (both level and type must be non-zero)
+            const isSeatActive = (seat) => seat && seat.heatVentLevel > 0 && seat.heatVentType > 0;
+            const driverActive = isSeatActive(data.seatStatus?.driver);
+            const passengerActive = isSeatActive(data.seatStatus?.passenger);
+
+            // Only show if climate is on AND something is active
+            const hasActiveComfort = data.steeringWheelHeater || data.sideMirrorHeater || data.rearWindowHeater || driverActive || passengerActive;
+            return (data.airCon || data.defrost) && hasActiveComfort ? `
           <div class="status-row">
             <div class="status-row-left">
               <ha-icon icon="mdi:car-seat-heater"></ha-icon>
@@ -1463,25 +1471,26 @@ class KiaVehicleCard extends HTMLElement {
               ${data.steeringWheelHeater ? `<ha-icon icon="mdi:steering" style="color: var(--warm);" title="Heated Steering Wheel"></ha-icon>` : ''}
               ${data.sideMirrorHeater ? `<ha-icon icon="mdi:car-side" style="color: var(--warm);" title="Heated Mirrors"></ha-icon>` : ''}
               ${data.rearWindowHeater ? `<ha-icon icon="mdi:car-defrost-rear" style="color: var(--warm);" title="Rear Defrost"></ha-icon>` : ''}
-              
+
               ${/* Driver Seat */ ''}
-              ${data.seatStatus?.driver?.heatVentLevel > 0 ? `
-                <ha-icon 
-                  icon="mdi:car-seat" 
-                  style="color: ${data.seatStatus.driver.heatVentType === 2 ? 'var(--cool)' : 'var(--warm)'};" 
-                  title="Driver Seat ${data.seatStatus.driver.heatVentLevel}">
+              ${driverActive ? `
+                <ha-icon
+                  icon="mdi:car-seat"
+                  style="color: ${data.seatStatus.driver.heatVentType === 2 ? 'var(--cool)' : 'var(--warm)'};"
+                  title="Driver Seat Level ${data.seatStatus.driver.heatVentLevel}">
                 </ha-icon>` : ''}
-                
+
               ${/* Passenger Seat */ ''}
-              ${data.seatStatus?.passenger?.heatVentLevel > 0 ? `
-                <ha-icon 
-                  icon="mdi:car-seat" 
-                  style="color: ${data.seatStatus.passenger.heatVentType === 2 ? 'var(--cool)' : 'var(--warm)'};" 
-                  title="Passenger Seat ${data.seatStatus.passenger.heatVentLevel}">
+              ${passengerActive ? `
+                <ha-icon
+                  icon="mdi:car-seat"
+                  style="color: ${data.seatStatus.passenger.heatVentType === 2 ? 'var(--cool)' : 'var(--warm)'};"
+                  title="Passenger Seat Level ${data.seatStatus.passenger.heatVentLevel}">
                 </ha-icon>` : ''}
             </div>
           </div>
-          ` : ''}
+          ` : '';
+          })()}
 
           <!-- Valet Mode - toggle switch -->
           <div class="status-row">
