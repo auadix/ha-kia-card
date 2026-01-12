@@ -1964,6 +1964,58 @@ class KiaVehicleCardEditor extends HTMLElement {
           </div>
         </div>
 
+        <div class="editor-section">Warm Preset Accessories</div>
+        <small style="color: var(--secondary-text-color, #666); margin-bottom: 12px; display: block;">
+          Customize which accessories turn on with the Warm preset
+        </small>
+        <div class="editor-row">
+          <label>
+            <input type="checkbox" id="warm_steering_wheel" ${this._config.warm_steering_wheel !== false ? 'checked' : ''}>
+            Heated Steering Wheel
+          </label>
+        </div>
+        <div class="editor-row">
+          <label>
+            <input type="checkbox" id="warm_front_left_seat" ${this._config.warm_front_left_seat !== false ? 'checked' : ''}>
+            Driver Heated Seat
+          </label>
+        </div>
+        <div class="editor-row">
+          <label>
+            <input type="checkbox" id="warm_front_right_seat" ${this._config.warm_front_right_seat !== false ? 'checked' : ''}>
+            Passenger Heated Seat
+          </label>
+        </div>
+        <div class="editor-row">
+          <label>
+            <input type="checkbox" id="warm_rear_left_seat" ${this._config.warm_rear_left_seat === true ? 'checked' : ''}>
+            Rear Left Heated Seat
+          </label>
+        </div>
+        <div class="editor-row">
+          <label>
+            <input type="checkbox" id="warm_rear_right_seat" ${this._config.warm_rear_right_seat === true ? 'checked' : ''}>
+            Rear Right Heated Seat
+          </label>
+        </div>
+        <div class="editor-grid">
+          <div class="editor-row">
+            <label>Seat Heat Level</label>
+            <select id="warm_seat_level">
+              <option value="6" ${(this._config.warm_seat_level || 6) === 6 ? 'selected' : ''}>Low Heat</option>
+              <option value="7" ${this._config.warm_seat_level === 7 ? 'selected' : ''}>Medium Heat</option>
+              <option value="8" ${this._config.warm_seat_level === 8 ? 'selected' : ''}>High Heat</option>
+            </select>
+          </div>
+          <div class="editor-row">
+            <label>Steering Wheel Level</label>
+            <select id="warm_steering_level">
+              <option value="1" ${this._config.warm_steering_level === 1 ? 'selected' : ''}>Low</option>
+              <option value="2" ${(this._config.warm_steering_level || 2) === 2 ? 'selected' : ''}>High</option>
+            </select>
+          </div>
+        </div>
+
         <div class="editor-section">Display Options</div>
         <div class="editor-row">
           <label>
@@ -1998,11 +2050,22 @@ class KiaVehicleCardEditor extends HTMLElement {
     });
 
     // Checkbox inputs
-    ['show_controls', 'show_status_row'].forEach(field => {
+    ['show_controls', 'show_status_row', 'warm_steering_wheel', 'warm_front_left_seat', 'warm_front_right_seat', 'warm_rear_left_seat', 'warm_rear_right_seat'].forEach(field => {
       const el = this.querySelector(`#${field}`);
       if (el) {
         el.addEventListener('change', (e) => {
           this._config = { ...this._config, [field]: e.target.checked };
+          this.dispatchEvent(new CustomEvent('config-changed', { detail: { config: this._config } }));
+        });
+      }
+    });
+
+    // Select dropdowns
+    ['warm_seat_level', 'warm_steering_level'].forEach(field => {
+      const el = this.querySelector(`#${field}`);
+      if (el) {
+        el.addEventListener('change', (e) => {
+          this._config = { ...this._config, [field]: parseInt(e.target.value) };
           this.dispatchEvent(new CustomEvent('config-changed', { detail: { config: this._config } }));
         });
       }
