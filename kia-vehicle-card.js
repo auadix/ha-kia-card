@@ -53,7 +53,16 @@ class KiaVehicleCard extends HTMLElement {
       cool_temp: 68,
       warm_temp: 80,
       custom_temp: 72,
-      duration: 10
+      duration: 10,
+      // Warm preset accessories (which to enable)
+      warm_steering_wheel: true,
+      warm_front_left_seat: true,
+      warm_front_right_seat: true,
+      warm_rear_left_seat: false,
+      warm_rear_right_seat: false,
+      // Seat/steering levels (6=Low Heat, 7=Med Heat, 8=High Heat, 1=Low for steering)
+      warm_seat_level: 6,  // Low Heat
+      warm_steering_level: 2  // High
     };
     this._climateMode = null;
     this._showClimatePanel = false;
@@ -1789,17 +1798,29 @@ class KiaVehicleCard extends HTMLElement {
       const climateData = {
         device_id: this._config.device_id,
         climate: true,
-        set_temp: temps[this._climateMode],
+        temperature: temps[this._climateMode],  // Note: service uses 'temperature' not 'set_temp'
         duration: this._config.duration,
         defrost: this._climateMode === 'warm',
         heating: this._climateMode === 'warm' ? 1 : 0
       };
 
-      // Add heated accessories for warm start
+      // Add heated accessories for warm start (configurable)
       if (this._climateMode === 'warm') {
-        climateData.steering_wheel = 2;
-        climateData.front_left_seat = 6;
-        climateData.front_right_seat = 6;
+        if (this._config.warm_steering_wheel) {
+          climateData.steering_wheel = this._config.warm_steering_level;
+        }
+        if (this._config.warm_front_left_seat) {
+          climateData.flseat = this._config.warm_seat_level;
+        }
+        if (this._config.warm_front_right_seat) {
+          climateData.frseat = this._config.warm_seat_level;
+        }
+        if (this._config.warm_rear_left_seat) {
+          climateData.rlseat = this._config.warm_seat_level;
+        }
+        if (this._config.warm_rear_right_seat) {
+          climateData.rrseat = this._config.warm_seat_level;
+        }
       }
 
       this.callService('kia_uvo', 'start_climate', climateData);
