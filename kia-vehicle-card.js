@@ -1964,43 +1964,43 @@ class KiaVehicleCardEditor extends HTMLElement {
           </div>
         </div>
 
-        <div class="editor-section">Warm Preset Accessories</div>
+        <div class="editor-section">Climate Preset Accessories</div>
         <small style="color: var(--secondary-text-color, #666); margin-bottom: 12px; display: block;">
-          Customize which accessories turn on with the Warm preset
+          Customize which accessories activate with climate presets
         </small>
         <div class="editor-row">
           <label>
             <input type="checkbox" id="warm_steering_wheel" ${this._config.warm_steering_wheel !== false ? 'checked' : ''}>
-            Heated Steering Wheel
+            Steering Wheel (Heating only)
           </label>
         </div>
         <div class="editor-row">
           <label>
             <input type="checkbox" id="warm_front_left_seat" ${this._config.warm_front_left_seat !== false ? 'checked' : ''}>
-            Driver Heated Seat
+            Driver Seat
           </label>
         </div>
         <div class="editor-row">
           <label>
             <input type="checkbox" id="warm_front_right_seat" ${this._config.warm_front_right_seat !== false ? 'checked' : ''}>
-            Passenger Heated Seat
+            Passenger Seat
           </label>
         </div>
         <div class="editor-row">
           <label>
             <input type="checkbox" id="warm_rear_left_seat" ${this._config.warm_rear_left_seat === true ? 'checked' : ''}>
-            Rear Left Heated Seat
+            Rear Left Seat
           </label>
         </div>
         <div class="editor-row">
           <label>
             <input type="checkbox" id="warm_rear_right_seat" ${this._config.warm_rear_right_seat === true ? 'checked' : ''}>
-            Rear Right Heated Seat
+            Rear Right Seat
           </label>
         </div>
         <div class="editor-grid">
           <div class="editor-row">
-            <label>Seat Heat Level</label>
+            <label>Seat Level</label>
             <select id="warm_seat_level">
               <option value="6" ${(this._config.warm_seat_level || 6) === 6 ? 'selected' : ''}>Low Heat</option>
               <option value="7" ${this._config.warm_seat_level === 7 ? 'selected' : ''}>Medium Heat</option>
@@ -2008,7 +2008,7 @@ class KiaVehicleCardEditor extends HTMLElement {
             </select>
           </div>
           <div class="editor-row">
-            <label>Steering Wheel Level</label>
+            <label>Steering Wheel Level (Heat only)</label>
             <select id="warm_steering_level">
               <option value="1" ${this._config.warm_steering_level === 1 ? 'selected' : ''}>Low</option>
               <option value="2" ${(this._config.warm_steering_level || 2) === 2 ? 'selected' : ''}>High</option>

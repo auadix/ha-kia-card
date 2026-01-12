@@ -137,14 +137,14 @@ cool_temp: 68
 warm_temp: 80
 custom_temp: 72
 duration: 10
-# Warm preset accessories (customize what turns on)
-warm_steering_wheel: true
-warm_front_left_seat: true
-warm_front_right_seat: true
-warm_rear_left_seat: false
-warm_rear_right_seat: false
-warm_seat_level: 6        # 6=Low Heat, 7=Med Heat, 8=High Heat
-warm_steering_level: 2    # 1=Low, 2=High
+# Climate preset accessories (Warm preset only - customize what activates)
+warm_steering_wheel: true       # Steering wheel heating
+warm_front_left_seat: true      # Driver seat
+warm_front_right_seat: true     # Passenger seat
+warm_rear_left_seat: false      # Rear left seat
+warm_rear_right_seat: false     # Rear right seat
+warm_seat_level: 6              # 6=Low Heat, 7=Med, 8=High
+warm_steering_level: 2          # 1=Low, 2=High (heating only)
 ```
 
 ### Configuration Options
@@ -162,14 +162,14 @@ warm_steering_level: 2    # 1=Low, 2=High
 | `warm_temp` | number | 80 | Temperature for "Warm" preset (°F) |
 | `custom_temp` | number | 72 | Temperature for "Custom" preset (°F) |
 | `duration` | number | 10 | Climate duration in minutes (1-30) |
-| **Warm Preset Accessories** | | | *Customize what activates with "Warm" preset* |
-| `warm_steering_wheel` | boolean | true | Enable heated steering wheel |
-| `warm_front_left_seat` | boolean | true | Enable driver heated seat |
-| `warm_front_right_seat` | boolean | true | Enable passenger heated seat |
-| `warm_rear_left_seat` | boolean | false | Enable rear left heated seat |
-| `warm_rear_right_seat` | boolean | false | Enable rear right heated seat |
-| `warm_seat_level` | number | 6 | Seat heat level: 6=Low, 7=Med, 8=High |
-| `warm_steering_level` | number | 2 | Steering heat level: 1=Low, 2=High |
+| **Climate Preset Accessories** | | | *Warm preset only - seats can heat/cool* |
+| `warm_steering_wheel` | boolean | true | Steering wheel (heating only) |
+| `warm_front_left_seat` | boolean | true | Driver seat |
+| `warm_front_right_seat` | boolean | true | Passenger seat |
+| `warm_rear_left_seat` | boolean | false | Rear left seat |
+| `warm_rear_right_seat` | boolean | false | Rear right seat |
+| `warm_seat_level` | number | 6 | Seat level: 6=Low Heat, 7=Med, 8=High |
+| `warm_steering_level` | number | 2 | Steering level: 1=Low, 2=High (heat only) |
 
 ## Screenshots
 
