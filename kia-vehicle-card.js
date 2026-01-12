@@ -1452,8 +1452,8 @@ class KiaVehicleCard extends HTMLElement {
             ` : ''}
           </div>
           
-          <!-- Comfort Status Row -->
-          ${(data.steeringWheelHeater || data.sideMirrorHeater || data.rearWindowHeater || (data.seatStatus && (data.seatStatus.driver?.heatVentLevel > 0 || data.seatStatus.passenger?.heatVentLevel > 0))) ? `
+          <!-- Comfort Status Row - Only show when climate/defrost is actually running -->
+          ${(data.airCon || data.defrost) && (data.steeringWheelHeater || data.sideMirrorHeater || data.rearWindowHeater || (data.seatStatus && (data.seatStatus.driver?.heatVentLevel > 0 || data.seatStatus.passenger?.heatVentLevel > 0))) ? `
           <div class="status-row">
             <div class="status-row-left">
               <ha-icon icon="mdi:car-seat-heater"></ha-icon>
