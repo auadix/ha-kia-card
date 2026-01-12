@@ -1,7 +1,7 @@
 /**
  * Kia Vehicle Card for Home Assistant
  * A modern, comprehensive card for Kia/Hyundai vehicles
- * Version: 2.9.3
+ * Version: 2.10.0
  *
  * Features:
  * - MDI icons (no emojis)
@@ -1094,6 +1094,41 @@ class KiaVehicleCard extends HTMLElement {
           --mdc-icon-size: 14px;
         }
 
+        /* Animations */
+        @keyframes blink {
+          0%, 49% { opacity: 1; }
+          50%, 100% { opacity: 0.2; }
+        }
+
+        @keyframes pulse {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.6; }
+        }
+
+        @keyframes charging-pulse {
+          0%, 100% {
+            opacity: 1;
+            transform: scale(1);
+          }
+          50% {
+            opacity: 0.7;
+            transform: scale(1.05);
+          }
+        }
+
+        /* Animation classes */
+        .animate-blink {
+          animation: blink 1s ease-in-out infinite;
+        }
+
+        .animate-pulse {
+          animation: pulse 2s ease-in-out infinite;
+        }
+
+        .animate-charging {
+          animation: charging-pulse 1.5s ease-in-out infinite;
+        }
+
         /* Responsive */
         @media (max-width: 450px) {
           .main-content {
@@ -1113,7 +1148,7 @@ class KiaVehicleCard extends HTMLElement {
         <!-- Header -->
         <div class="header">
           <div class="vehicle-name">${this._config.name}</div>
-          <div class="status-badge ${data.engine ? 'running' : (data.locked ? 'locked' : 'unlocked')}">
+          <div class="status-badge ${data.engine ? 'running animate-pulse' : (data.locked ? 'locked' : 'unlocked')}">
             ${data.engine ? 'Running' : (data.locked ? 'Locked' : 'Unlocked')}
           </div>
         </div>
@@ -1301,7 +1336,7 @@ class KiaVehicleCard extends HTMLElement {
               </div>
               ` : ''}
               ${data.hazardLights ? `
-              <div class="info-chip highlight full-width">
+              <div class="info-chip highlight full-width animate-blink">
                 <ha-icon icon="mdi:hazard-lights"></ha-icon>
                 <span>Hazard Lights Active</span>
               </div>
@@ -1309,7 +1344,7 @@ class KiaVehicleCard extends HTMLElement {
 
               ${isEV ? `
               <!-- EV Battery (for EVs) -->
-              <div class="info-chip ${data.evCharging ? 'highlight' : ''} full-width">
+              <div class="info-chip ${data.evCharging ? 'highlight animate-charging' : ''} full-width">
                 <ha-icon icon="mdi:${data.evCharging ? 'battery-charging' : 'battery'}"></ha-icon>
                 <span>EV: ${data.evBattery}% ${data.evCharging ? '⚡ Charging' : ''} ${data.evPluggedIn && !data.evCharging ? '🔌 Plugged In' : ''}</span>
               </div>
@@ -1475,7 +1510,7 @@ class KiaVehicleCard extends HTMLElement {
             // Only show if climate is on AND something is active
             const hasActiveComfort = data.steeringWheelHeater || data.sideMirrorHeater || data.rearWindowHeater || driverActive || passengerActive;
             return (data.airCon || data.defrost) && hasActiveComfort ? `
-          <div class="status-row">
+          <div class="status-row animate-pulse">
             <div class="status-row-left">
               <ha-icon icon="mdi:car-seat-heater"></ha-icon>
               <span>Climate Active</span>

@@ -1,7 +1,7 @@
 # Kia Vehicle Card for Home Assistant
 
 [![hacs_badge](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://github.com/custom-components/hacs)
-![Version](https://img.shields.io/badge/version-2.7.0-blue)
+![Version](https://img.shields.io/badge/version-2.10.0-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
 A beautiful, modern, and comprehensive Lovelace card for Kia and Hyundai vehicles using the [Kia UVO / Hyundai Bluelink integration](https://github.com/Hyundai-Kia-Connect/kia_uvo).
@@ -17,6 +17,11 @@ A beautiful, modern, and comprehensive Lovelace card for Kia and Hyundai vehicle
 - **Location Tracking** - Clickable location that opens Google Maps
 - **Heading/Direction** - Compass badge showing vehicle orientation
 - **Speed Indicator** - Real-time speed when driving (v2.7.0)
+- **Animated Status Indicators** (v2.10.0)
+  - Blinking hazard lights when active
+  - Pulsing "Running" badge when engine is on
+  - Pulsing "Climate Active" when climate control is running
+  - Charging animation for EV batteries while charging
 
 ### 🔧 Service & Maintenance
 - **Enhanced Service Countdown** - Color-coded progress bar (v2.7.0)
