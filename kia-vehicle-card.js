@@ -1,7 +1,7 @@
 /**
  * Kia Vehicle Card for Home Assistant
  * A modern, comprehensive card for Kia/Hyundai vehicles
- * Version: 2.10.1
+ * Version: 2.11.0
  *
  * Features:
  * - MDI icons (no emojis)
@@ -68,6 +68,7 @@ class KiaVehicleCard extends HTMLElement {
     this._showClimatePanel = false;
     this._showHealthDetails = false;
     this._showTirePressure = false;
+    this._showQuickActions = false;
   }
 
   setConfig(config) {
@@ -1072,6 +1073,61 @@ class KiaVehicleCard extends HTMLElement {
           cursor: not-allowed;
         }
 
+        /* Quick Actions Menu */
+        .quick-actions-menu {
+          padding: 0 var(--spacing-lg) var(--spacing-md);
+          animation: slideDown 0.2s ease-out;
+        }
+
+        @keyframes slideDown {
+          from {
+            opacity: 0;
+            transform: translateY(-10px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        .quick-actions-grid {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: var(--spacing-sm);
+        }
+
+        .quick-action-btn {
+          background: var(--card-surface);
+          border: 1px solid var(--card-surface-light);
+          border-radius: var(--radius);
+          padding: 14px 8px;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 8px;
+          cursor: pointer;
+          transition: all 0.2s ease;
+          color: var(--text-primary);
+        }
+
+        .quick-action-btn:hover {
+          background: var(--card-surface-light);
+          border-color: var(--accent);
+        }
+
+        .quick-action-btn:active {
+          transform: scale(0.97);
+        }
+
+        .quick-action-btn ha-icon {
+          --mdc-icon-size: 24px;
+        }
+
+        .quick-action-label {
+          font-size: 0.75rem;
+          text-align: center;
+        }
+
         /* Footer */
         .footer {
           padding: 12px var(--spacing-lg);
@@ -1365,13 +1421,33 @@ class KiaVehicleCard extends HTMLElement {
               <ha-icon icon="mdi:${data.engine ? 'stop-circle-outline' : 'power'}"></ha-icon>
               <span class="control-label">${data.engine ? 'Climate Stop' : 'Climate Start'}</span>
             </div>
-            <div class="control-btn" id="btn-horn">
-              <ha-icon icon="mdi:bullhorn"></ha-icon>
-              <span class="control-label">Horn</span>
+            <div class="control-btn ${this._showQuickActions ? 'active' : ''}" id="btn-more">
+              <ha-icon icon="mdi:dots-horizontal"></ha-icon>
+              <span class="control-label">More</span>
             </div>
             <div class="control-btn" id="btn-refresh">
               <ha-icon icon="mdi:refresh"></ha-icon>
               <span class="control-label">Update</span>
+            </div>
+          </div>
+        </div>
+        ` : ''}
+
+        <!-- Quick Actions Menu (shown when More button is clicked) -->
+        ${this._showQuickActions ? `
+        <div class="quick-actions-menu">
+          <div class="quick-actions-grid">
+            <div class="quick-action-btn" id="qa-find-car">
+              <ha-icon icon="mdi:car-search"></ha-icon>
+              <span class="quick-action-label">Find My Car</span>
+            </div>
+            <div class="quick-action-btn" id="qa-horn">
+              <ha-icon icon="mdi:bullhorn"></ha-icon>
+              <span class="quick-action-label">Horn</span>
+            </div>
+            <div class="quick-action-btn" id="qa-lights">
+              <ha-icon icon="mdi:car-light-high"></ha-icon>
+              <span class="quick-action-label">Flash Lights</span>
             </div>
           </div>
         </div>
@@ -1782,13 +1858,43 @@ class KiaVehicleCard extends HTMLElement {
       }
     });
 
-    // Horn button
-    this.shadowRoot.getElementById('btn-horn')?.addEventListener('click', () => {
+    // More button (toggle Quick Actions menu)
+    this.shadowRoot.getElementById('btn-more')?.addEventListener('click', () => {
+      this._showQuickActions = !this._showQuickActions;
+      this.render();
+    });
+
+    // Quick Actions - Find My Car (hazard lights + horn)
+    this.shadowRoot.getElementById('qa-find-car')?.addEventListener('click', () => {
       if (!this._config.device_id) {
         this.showNotification('Please configure device_id');
         return;
       }
       this.callService('kia_uvo', 'start_hazard_lights_and_horn', { device_id: this._config.device_id });
+      this._showQuickActions = false;
+      this.render();
+    });
+
+    // Quick Actions - Horn only
+    this.shadowRoot.getElementById('qa-horn')?.addEventListener('click', () => {
+      if (!this._config.device_id) {
+        this.showNotification('Please configure device_id');
+        return;
+      }
+      this.callService('kia_uvo', 'start_hazard_lights_and_horn', { device_id: this._config.device_id });
+      this._showQuickActions = false;
+      this.render();
+    });
+
+    // Quick Actions - Flash Lights
+    this.shadowRoot.getElementById('qa-lights')?.addEventListener('click', () => {
+      if (!this._config.device_id) {
+        this.showNotification('Please configure device_id');
+        return;
+      }
+      this.callService('kia_uvo', 'start_hazard_lights_and_horn', { device_id: this._config.device_id });
+      this._showQuickActions = false;
+      this.render();
     });
 
     // Refresh button
