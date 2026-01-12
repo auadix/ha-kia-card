@@ -143,7 +143,7 @@ warm_front_left_seat: true      # Driver seat
 warm_front_right_seat: true     # Passenger seat
 warm_rear_left_seat: false      # Rear left seat
 warm_rear_right_seat: false     # Rear right seat
-warm_seat_level: 6              # 6=Low Heat, 7=Med, 8=High
+warm_seat_level: 6              # 6=Low, 7=Medium, 8=High
 warm_steering_level: 2          # 1=Low, 2=High (heating only)
 ```
 
@@ -168,7 +168,7 @@ warm_steering_level: 2          # 1=Low, 2=High (heating only)
 | `warm_front_right_seat` | boolean | true | Passenger seat |
 | `warm_rear_left_seat` | boolean | false | Rear left seat |
 | `warm_rear_right_seat` | boolean | false | Rear right seat |
-| `warm_seat_level` | number | 6 | Seat level: 6=Low Heat, 7=Med, 8=High |
+| `warm_seat_level` | number | 6 | Seat level: 6=Low, 7=Medium, 8=High |
 | `warm_steering_level` | number | 2 | Steering level: 1=Low, 2=High (heat only) |
 
 ## Screenshots

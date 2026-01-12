@@ -2002,9 +2002,9 @@ class KiaVehicleCardEditor extends HTMLElement {
           <div class="editor-row">
             <label>Seat Level</label>
             <select id="warm_seat_level">
-              <option value="6" ${(this._config.warm_seat_level || 6) === 6 ? 'selected' : ''}>Low Heat</option>
-              <option value="7" ${this._config.warm_seat_level === 7 ? 'selected' : ''}>Medium Heat</option>
-              <option value="8" ${this._config.warm_seat_level === 8 ? 'selected' : ''}>High Heat</option>
+              <option value="6" ${(this._config.warm_seat_level || 6) === 6 ? 'selected' : ''}>Low</option>
+              <option value="7" ${this._config.warm_seat_level === 7 ? 'selected' : ''}>Medium</option>
+              <option value="8" ${this._config.warm_seat_level === 8 ? 'selected' : ''}>High</option>
             </select>
           </div>
           <div class="editor-row">
