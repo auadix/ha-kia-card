@@ -283,10 +283,10 @@ test('climate sends the unit the region expects', () => {
   assert.equal(startClimate(canada.card, canada.calls, 'cool'), 19);
   usa.card._showClimatePanel = true;
   usa.card.render();
-  assert.match(usa.card.shadowRoot.innerHTML, /68°F/);
+  assert.match(usa.card.shadowRoot.innerHTML, /68 °F/);
   canada.card._showClimatePanel = true;
   canada.card.render();
-  assert.match(canada.card.shadowRoot.innerHTML, /19°C/);
+  assert.match(canada.card.shadowRoot.innerHTML, /19 °C/);
 });
 
 test('default climate temperatures are accepted by every region', () => {
@@ -490,7 +490,7 @@ test('car weather shows conditions for the rounded car location', async () => {
   assert.match(urls[0], /temperature_unit=fahrenheit/);
   assert.match(card.shadowRoot.innerHTML, /title="Cloudy"/);
   assert.match(card.shadowRoot.innerHTML, /mdi:weather-cloudy/);
-  assert.match(visibleText(card), /70°F/);
+  assert.match(visibleText(card), /70 °F/);
   card.render();
   card.updateClock();
   await settle();

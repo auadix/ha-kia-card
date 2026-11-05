@@ -27,6 +27,7 @@ Planned as 2.13.0. Available for testing as the `v2.13.0-beta` pre-releases.
 - "Horn" is now "Horn + Lights", since there's no horn-only command.
 - The card only redraws when its own entities change, and "Updated … ago" refreshes on its own.
 - The weather badge is hidden on Kia USA unless `car_weather` is on, because Kia reports the same weather there regardless of conditions.
+- Temperatures are written the way Home Assistant writes them, with a space before the unit (68 °F).
 - Rewrote the documentation.
 
 ### Fixed

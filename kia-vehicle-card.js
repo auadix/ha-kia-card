@@ -1,7 +1,7 @@
 /**
  * Kia Vehicle Card for Home Assistant
  * A modern, comprehensive card for Kia/Hyundai vehicles
- * Version: 2.13.0-beta.4
+ * Version: 2.13.0-beta.5
  *
  * Features:
  * - MDI icons (no emojis)
@@ -355,7 +355,7 @@ class KiaVehicleCard extends HTMLElement {
       .then((response) => (response.ok ? response.json() : Promise.reject()))
       .then(({ current: reading }) => {
         const [type, label] = WEATHER_CODES[reading.weather_code] ?? [null, null];
-        const temperature = `${Math.round(reading.temperature_2m)}${fahrenheit ? '°F' : '°C'}`;
+        const temperature = `${Math.round(reading.temperature_2m)} ${fahrenheit ? '°F' : '°C'}`;
         this._carWeather = { key, at: Date.now(), type, label, temperature };
         this.render();
       })
@@ -1996,21 +1996,21 @@ class KiaVehicleCard extends HTMLElement {
                 <ha-icon icon="mdi:snowflake"></ha-icon>
               </div>
               <div class="preset-title">Start Cool</div>
-              <div class="preset-subtitle">${this.temperatureFor('cool')}${temperatureUnit}</div>
+              <div class="preset-subtitle">${this.temperatureFor('cool')} ${temperatureUnit}</div>
             </div>
             <div class="climate-preset warm ${this._climateMode === 'warm' ? 'selected' : ''}" id="preset-warm">
               <div class="preset-icon">
                 <ha-icon icon="mdi:white-balance-sunny"></ha-icon>
               </div>
               <div class="preset-title">Start Warm</div>
-              <div class="preset-subtitle">${this.temperatureFor('warm')}${temperatureUnit} + Accessories</div>
+              <div class="preset-subtitle">${this.temperatureFor('warm')} ${temperatureUnit} + Accessories</div>
             </div>
             <div class="climate-preset custom ${this._climateMode === 'custom' ? 'selected' : ''}" id="preset-custom">
               <div class="preset-icon">
                 <ha-icon icon="mdi:tune-variant"></ha-icon>
               </div>
               <div class="preset-title">Start Custom</div>
-              <div class="preset-subtitle">${this.temperatureFor('custom')}${temperatureUnit}</div>
+              <div class="preset-subtitle">${this.temperatureFor('custom')} ${temperatureUnit}</div>
             </div>
           </div>
           <button class="climate-start-btn" id="btn-start-climate" ${!this._climateMode ? 'disabled' : ''}>
@@ -2787,4 +2787,4 @@ window.customCards.push({
   preview: true
 });
 
-console.info('%c KIA-VEHICLE-CARD %c v2.13.0-beta.4 ', 'background: #3B82F6; color: white; font-weight: bold; border-radius: 4px 0 0 4px;', 'background: #1f2937; color: white; border-radius: 0 4px 4px 0;');
+console.info('%c KIA-VEHICLE-CARD %c v2.13.0-beta.5 ', 'background: #3B82F6; color: white; font-weight: bold; border-radius: 4px 0 0 4px;', 'background: #1f2937; color: white; border-radius: 0 4px 4px 0;');
