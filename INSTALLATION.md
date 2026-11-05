@@ -72,28 +72,32 @@
 After installation, verify the card loaded:
 
 1. Open browser console (F12 → Console)
-2. Look for: `KIA-VEHICLE-CARD v2.7.0`
+2. Look for: `KIA-VEHICLE-CARD`
 3. Check for any error messages
 
 ---
 
 ## Configuration
 
-### Find Your Vehicle ID
+### Easiest: pick your vehicle in the editor
+
+Add the card, open its visual editor, and choose your vehicle from the **Vehicle** dropdown. Everything else is detected for you, and you can skip the manual IDs below.
+
+### Advanced: find your Vehicle ID manually
 
 Your vehicle ID is the prefix used in your entity names.
 
 **Example:**
 If you have entities like:
-- `sensor.kikia_fuel_level`
-- `binary_sensor.kikia_engine`
-- `lock.kikia_door_lock`
+- `sensor.my_car_fuel_level`
+- `binary_sensor.my_car_engine`
+- `lock.my_car_door_lock`
 
-Your `vehicle_id` is: **kikia**
+Your `vehicle_id` is: **my_car**
 
 ### Find Your Device ID
 
-1. Go to **Developer Tools** → **Services**
+1. Go to **Developer Tools** → **Actions**
 2. Select service: `kia_uvo.start_climate`
 3. Click on **Device** dropdown
 4. Select your vehicle
@@ -104,7 +108,7 @@ Your `vehicle_id` is: **kikia**
 
 ```yaml
 type: custom:kia-vehicle-card
-vehicle_id: kikia  # Replace with your vehicle ID
+vehicle_id: my_car  # Replace with your vehicle ID
 name: 2025 Kia Sorento
 device_id: abc123def456  # Replace with your device ID
 ```
@@ -113,7 +117,7 @@ device_id: abc123def456  # Replace with your device ID
 
 ```yaml
 type: custom:kia-vehicle-card
-vehicle_id: kikia
+vehicle_id: my_car
 name: 2025 Kia Sorento X-LINE SX-Prestige
 image: https://owners.kia.com/path/to/your/vehicle/image.png
 device_id: abc123def456ghi789
@@ -146,7 +150,7 @@ duration: 10
 
 **Solutions:**
 1. Verify Kia UVO integration is working
-2. Check you have the correct API version (>= 3.54.0)
+2. Make sure the integration is up to date
 3. Force update from the integration
 4. Wait for next automatic refresh (every 30 min)
 5. Check entity names match your vehicle_id
@@ -170,7 +174,6 @@ duration: 10
 1. Verify `sensor.{vehicle}_speed` entity exists
 2. Check vehicle status is "Driving" (engine on)
 3. Ensure speed value > 0
-4. Update to integration v2.49.0 or later
 
 ### Service Countdown Wrong Color
 
@@ -209,5 +212,4 @@ duration: 10
 
 - **Documentation**: [README](https://github.com/auadix/ha-kia-card#readme)
 - **Issues**: [GitHub Issues](https://github.com/auadix/ha-kia-card/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/auadix/ha-kia-card/discussions)
 - **Integration Support**: [Kia UVO](https://github.com/Hyundai-Kia-Connect/kia_uvo)

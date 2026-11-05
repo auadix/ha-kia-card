@@ -254,7 +254,6 @@ class KiaVehicleCard extends HTMLElement {
       image: '',
       show_controls: true,
       show_status_row: true,
-      theme: 'dark',
       device_id: '',
       car_weather: false,
       // Climate presets (cool_temp, warm_temp, custom_temp default by region)
@@ -2491,7 +2490,6 @@ class KiaVehicleCard extends HTMLElement {
     return {
       device_id: vehicle?.id ?? '',
       name: vehicle?.name ?? 'My Kia',
-      theme: 'dark',
       show_controls: true,
       show_status_row: true,
       duration: 10

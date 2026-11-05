@@ -29,9 +29,9 @@ device_id: your_device_id
 
 ## Requirements
 
-- Kia UVO / Hyundai Bluelink integration installed
-- API version >= 3.54.0
-- Integration version >= 2.49.0
+- The [Kia UVO / Hyundai Bluelink integration](https://github.com/Hyundai-Kia-Connect/kia_uvo) installed and configured
+
+The card shows whatever your vehicle reports; anything it does not report is simply hidden.
 
 ## Documentation
 

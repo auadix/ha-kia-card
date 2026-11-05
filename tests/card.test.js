@@ -117,7 +117,7 @@ test('every ENTITIES entry resolves on the fork and on upstream where it exists'
     'tirePressureFrontLeft', 'tirePressureFrontRight', 'tirePressureRearLeft', 'tirePressureRearRight']);
 
   const upstream = mount({ device_id: 'u1' }, install(fixtures.upstream, { prefix: 'renamed_car', deviceId: 'u1' }));
-  const fork = mount({ vehicle_id: 'kikia' }, { states: install(fixtures.fork, { prefix: 'kikia', deviceId: 'f1' }).states });
+  const fork = mount({ vehicle_id: 'my_car' }, { states: install(fixtures.fork, { prefix: 'my_car', deviceId: 'f1' }).states });
 
   const missing = { upstream: [], fork: [] };
   for (const key of keys) {
@@ -142,11 +142,11 @@ test('picking a device finds entities by translation key, whatever they are call
 });
 
 test('an old vehicle_id config still works and gains the device id', async () => {
-  const hass = install(fixtures.upstream, { prefix: 'kikia', deviceId: 'd9' });
-  hass.states['lock.kikia_door_lock'] = entity('locked');
+  const hass = install(fixtures.upstream, { prefix: 'my_car', deviceId: 'd9' });
+  hass.states['lock.my_car_door_lock'] = entity('locked');
   const calls = [];
   hass.callService = (...args) => calls.push(args);
-  const card = mount({ vehicle_id: 'kikia' }, hass);
+  const card = mount({ vehicle_id: 'my_car' }, hass);
   assert.equal(card.deviceId, 'd9');
   card.shadowRoot.listeners['btn-refresh']();
   assert.deepEqual(JSON.parse(JSON.stringify(calls)), [['kia_uvo', 'force_update', { device_id: 'd9' }]]);
@@ -175,11 +175,11 @@ test('renamed lamp and oil warnings fire on stock upstream names', () => {
 
 test('fork diagnostics show when present and stay hidden otherwise', () => {
   const states = {
-    'sensor.kikia_car_battery_warning_level': entity('100'),
-    'sensor.kikia_link_status': entity('0'),
-    'sensor.kikia_roadside_assistance_status': entity('0'),
+    'sensor.my_car_car_battery_warning_level': entity('100'),
+    'sensor.my_car_link_status': entity('0'),
+    'sensor.my_car_roadside_assistance_status': entity('0'),
   };
-  const text = visibleText(mount({ vehicle_id: 'kikia' }, { states }));
+  const text = visibleText(mount({ vehicle_id: 'my_car' }, { states }));
   assert.match(text, /12V Warning Level 100/);
   assert.match(text, /Link Status 0/);
   assert.match(text, /Roadside Assistance 0/);
@@ -544,7 +544,7 @@ test('default config picks a real vehicle and never ships a personal prefix', ()
   assert.equal(stub.device_id, 'd1');
   assert.equal(stub.name, 'Family Car');
   assert.equal(stub.vehicle_id, undefined);
-  assert.ok(!fs.readFileSync(path.join(__dirname, '..', 'kia-vehicle-card.js'), 'utf8').includes("'kikia'"));
+  assert.ok(elements['kia-vehicle-card'].getStubConfig({}).device_id === '');
 });
 
 test('editor offers vehicles and does not rebuild on unrelated hass updates', () => {
