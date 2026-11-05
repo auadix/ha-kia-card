@@ -111,7 +111,7 @@ test('every ENTITIES entry resolves on the fork and on upstream where it exists'
 
   const forkOnly = new Set(['tailLampFault', 'stopLampFault', 'carBatteryWarningLevel', 'linkStatus', 'roadsideStatus',
     'speed', 'heading', 'weatherType', 'valetMode']);
-  const absentFromFork = new Set(['geocodedLocation']);
+  const absentFromFork = new Set(['geocodedLocation', 'driveMode', 'gearPosition', 'averageFuelEconomy', 'auxBatteryFault']);
   const neither = new Set(['vehicleStatus', 'drivingStatus', 'weatherTemperature', 'locationSensor',
     'headlampLeftHigh', 'headlampRightHigh', 'headlampLeftBifunc', 'headlampRightBifunc',
     'tirePressureFrontLeft', 'tirePressureFrontRight', 'tirePressureRearLeft', 'tirePressureRearRight']);
@@ -518,6 +518,58 @@ test('Kia USA fixed weather is hidden, other sources still show', () => {
   };
   assert.ok(!withWeather('Kia USA').includes('<div class="weather-badge"'));
   assert.ok(withWeather('Kia Canada').includes('<div class="weather-badge"'));
+});
+
+test('drive mode and gear show only with the ignition on', () => {
+  const states = {
+    'sensor.car_drive_mode': entity('SPORT'),
+    'sensor.car_gear_position': entity('D'),
+    'binary_sensor.car_engine': entity('off'),
+  };
+  assert.ok(!visibleText(mount({ vehicle_id: 'car' }, { states })).includes('SPORT'));
+  states['binary_sensor.car_engine'] = entity('on');
+  const text = visibleText(mount({ vehicle_id: 'car' }, { states }));
+  assert.match(text, /SPORT/);
+  assert.match(text, /Gear D/);
+});
+
+test('average fuel economy shows with its own unit', () => {
+  const text = visibleText(mount({ vehicle_id: 'car' }, {
+    states: { 'sensor.car_average_fuel_economy_accumulated': entity('28.4', { unit_of_measurement: 'mpg' }) },
+  }));
+  assert.match(text, /28\.4 mpg/);
+});
+
+test('the 12V fault joins the warnings', () => {
+  const text = visibleText(mount({ vehicle_id: 'car' }, {
+    states: { 'binary_sensor.car_battery_auxiliary_fail_warning': entity('on') },
+  }));
+  assert.match(text, /12V Battery Fault/);
+});
+
+test('charging detail shows power and time to full only while charging', () => {
+  const base = {
+    'sensor.car_ev_battery_level': entity('40'),
+    'sensor.car_ev_charging_power': entity('7.2', { unit_of_measurement: 'kW' }),
+    'sensor.car_estimated_charge_duration': entity('95'),
+  };
+  const notCharging = visibleText(mount({ vehicle_id: 'car' }, { states: base }));
+  assert.ok(!notCharging.includes('min to full'));
+  const charging = visibleText(mount({ vehicle_id: 'car' }, {
+    states: { ...base, 'binary_sensor.car_ev_battery_charge': entity('on') },
+  }));
+  assert.match(charging, /7\.2 kW · 95 min to full/);
+});
+
+test('seat heater sensors feed the comfort row when no raw payload exists', () => {
+  const states = {
+    'binary_sensor.car_air_conditioner': entity('on'),
+    'binary_sensor.car_front_left_seat_heater': entity('on'),
+  };
+  const card = mount({ vehicle_id: 'car' }, { states });
+  const html = card.shadowRoot.innerHTML;
+  assert.match(html, /Climate Active/);
+  assert.match(html, /mdi:car-seat/);
 });
 
 test('controls appear only when they can work', () => {

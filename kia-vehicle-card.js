@@ -1,7 +1,7 @@
 /**
  * Kia Vehicle Card for Home Assistant
  * A modern, comprehensive card for Kia/Hyundai vehicles
- * Version: 2.13.0-beta.3
+ * Version: 2.13.0-beta.4
  *
  * Features:
  * - MDI icons (no emojis)
@@ -163,6 +163,16 @@ const ENTITIES = {
   stopLampFault: ent('binary_sensor', null, 'stop_lamp_fault'),
   hazardLights: ent('binary_sensor', 'hazard_lights_on', 'hazard_lights'),
   // Raw API payload
+  // Comfort fallback for cars without the raw climate payload
+  seatHeaterDriver: ent('binary_sensor', 'front_left_seat_heater_on', 'front_left_seat_heater'),
+  seatHeaterPassenger: ent('binary_sensor', 'front_right_seat_heater_on', 'front_right_seat_heater'),
+  // Diagnostics / extras
+  auxBatteryFault: ent('binary_sensor', 'battery_auxiliary_fail_warning_is_on', 'battery_auxiliary_fail_warning'),
+  averageFuelEconomy: ent('sensor', 'average_fuel_economy_accumulated'),
+  driveMode: ent('sensor', 'drive_mode'),
+  gearPosition: ent('sensor', 'gear_position'),
+  evChargeDuration: ent('sensor', 'ev_estimated_current_charge_duration', 'estimated_charge_duration'),
+  evChargingPower: ent('sensor', 'ev_charging_power'),
   data: ent('sensor', 'data', 'data', 'all_data'),
 };
 
@@ -593,6 +603,14 @@ class KiaVehicleCard extends HTMLElement {
       // Climate
       setTemp: this.measurement('setTemperature'),
 
+      // Extras
+      auxBatteryFault: bool('auxBatteryFault'),
+      averageFuelEconomy: this.measurement('averageFuelEconomy'),
+      driveMode: this.stateOf('driveMode'),
+      gearPosition: this.stateOf('gearPosition'),
+      evChargeDuration: this.stateOf('evChargeDuration'),
+      evChargingPower: this.measurement('evChargingPower'),
+
       // Comfort / Heating - raw API data is more accurate, but only some regions have it
       ...(() => {
         const heatingData = rawStatus?.climate?.heatingAccessory;
@@ -605,15 +623,20 @@ class KiaVehicleCard extends HTMLElement {
       // Seats (from data attribute as they are complex objects)
       seatStatus: (() => {
         const seats = rawStatus?.climate?.heatVentSeat;
-        if (!seats) return null;
-        // heatVentType: 0=Off, 1=Heat, 2=Cool/Vent
-        // heatVentLevel: 0=Off, 1-3=Level
-        return {
-          driver: seats.driverSeat,
-          passenger: seats.passengerSeat,
-          rearLeft: seats.rearLeftSeat,
-          rearRight: seats.rearRightSeat
-        };
+        // heatVentType: 0=Off, 1=Heat, 2=Cool/Vent; heatVentLevel: 0=Off, 1-3=Level
+        if (seats) {
+          return {
+            driver: seats.driverSeat,
+            passenger: seats.passengerSeat,
+            rearLeft: seats.rearLeftSeat,
+            rearRight: seats.rearRightSeat,
+          };
+        }
+        // Fallback: on/off heater sensors only (no level/type detail)
+        const fromHeater = (key) => (bool(key) === true ? { heatVentType: 1, heatVentLevel: 1 } : null);
+        const driver = fromHeater('seatHeaterDriver');
+        const passenger = fromHeater('seatHeaterPassenger');
+        return driver || passenger ? { driver, passenger } : null;
       })(),
     };
 
@@ -1700,6 +1723,28 @@ class KiaVehicleCard extends HTMLElement {
               </div>
               ` : ''}
 
+              <!-- Drive mode & gear - only meaningful with the ignition on -->
+              ${data.engine === true && data.driveMode !== null ? `
+              <div class="info-chip">
+                <ha-icon icon="mdi:car-cog"></ha-icon>
+                <span>${escapeHtml(data.driveMode)}</span>
+              </div>
+              ` : ''}
+              ${data.engine === true && data.gearPosition !== null ? `
+              <div class="info-chip">
+                <ha-icon icon="mdi:car-shift-pattern"></ha-icon>
+                <span>Gear ${escapeHtml(data.gearPosition)}</span>
+              </div>
+              ` : ''}
+
+              <!-- Average fuel economy -->
+              ${data.averageFuelEconomy !== null ? `
+              <div class="info-chip" title="Average Fuel Economy">
+                <ha-icon icon="mdi:gas-station"></ha-icon>
+                <span>${escapeHtml(data.averageFuelEconomy)}</span>
+              </div>
+              ` : ''}
+
               <!-- Doors Status -->
               ${hasDoors ? `
               <div class="info-chip ${anyDoorOpen ? 'warning' : 'success'}">
@@ -1749,6 +1794,12 @@ class KiaVehicleCard extends HTMLElement {
               <div class="info-chip warning full-width">
                 <ha-icon icon="mdi:key-alert"></ha-icon>
                 <span>Key Fob Battery Low</span>
+              </div>
+              ` : ''}
+              ${data.auxBatteryFault ? `
+              <div class="info-chip warning full-width">
+                <ha-icon icon="mdi:car-battery"></ha-icon>
+                <span>12V Battery Fault</span>
               </div>
               ` : ''}
               ${data.brakeFluidWarning ? `
@@ -1865,6 +1916,15 @@ class KiaVehicleCard extends HTMLElement {
               <div class="info-chip ${data.evCharging ? 'highlight animate-charging' : ''} full-width">
                 <ha-icon icon="mdi:${data.evCharging ? 'battery-charging' : 'battery'}"></ha-icon>
                 <span>${isFullEV ? '' : `EV: ${escapeHtml(data.evBattery)}%${data.evRange !== null ? ` · ${escapeHtml(data.evRange)}` : ''} `}${data.evCharging ? '⚡ Charging' : ''}${data.evPluggedIn && !data.evCharging ? '🔌 Plugged In' : ''}</span>
+              </div>
+              ` : ''}
+              ${data.evCharging && (data.evChargeDuration !== null || data.evChargingPower !== null) ? `
+              <div class="info-chip full-width">
+                <ha-icon icon="mdi:ev-station"></ha-icon>
+                <span>${escapeHtml([
+                  data.evChargingPower,
+                  data.evChargeDuration !== null ? `${this.formatNumber(data.evChargeDuration)} min to full` : null,
+                ].filter(Boolean).join(' · '))}</span>
               </div>
               ` : ''}
             </div>
@@ -2727,4 +2787,4 @@ window.customCards.push({
   preview: true
 });
 
-console.info('%c KIA-VEHICLE-CARD %c v2.13.0-beta.3 ', 'background: #3B82F6; color: white; font-weight: bold; border-radius: 4px 0 0 4px;', 'background: #1f2937; color: white; border-radius: 0 4px 4px 0;');
+console.info('%c KIA-VEHICLE-CARD %c v2.13.0-beta.4 ', 'background: #3B82F6; color: white; font-weight: bold; border-radius: 4px 0 0 4px;', 'background: #1f2937; color: white; border-radius: 0 4px 4px 0;');
