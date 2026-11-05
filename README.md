@@ -117,7 +117,7 @@ Add the card to your Lovelace dashboard:
 
 ```yaml
 type: custom:kia-vehicle-card
-vehicle_id: kikia  # Your vehicle entity prefix
+vehicle_id: my_car  # Or pick the vehicle in the card editor
 name: 2025 Kia Sorento
 device_id: abc123...  # Required for controls (see below)
 ```
@@ -134,7 +134,7 @@ device_id: abc123...  # Required for controls (see below)
 
 ```yaml
 type: custom:kia-vehicle-card
-vehicle_id: kikia
+vehicle_id: my_car
 name: 2025 Kia Sorento X-LINE SX-Prestige
 image: https://owners.kia.com/content/dam/kia/us/owners/image/vehicle/2025/sorento/x-line_sx-prestige/M2Y.png
 device_id: abc123def456ghi789
@@ -159,9 +159,9 @@ warm_steering_level: 2          # 1=Low, 2=High (heating only)
 
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
-| `vehicle_id` | string | **Required** | Entity prefix for your vehicle (e.g., "kikia" from `sensor.kikia_fuel_level`) |
+| `device_id` | string | **Required*** | Your vehicle's device. Pick it in the card editor and everything else is found automatically |
+| `vehicle_id` | string | - | Entity prefix (e.g., "my_car" from `sensor.my_car_fuel_level`). *Can be used instead of `device_id` |
 | `name` | string | "My Kia" | Display name for your vehicle |
-| `device_id` | string | - | Device ID for remote controls (required for lock, climate, horn) |
 | `image` | string | - | URL to vehicle image (optional, will use SVG fallback) |
 | `show_controls` | boolean | true | Show control buttons (lock, climate, horn, update) |
 | `show_status_row` | boolean | true | Show status rows (vehicle status, health, tire pressure, valet) |
@@ -231,7 +231,9 @@ Both EV and non-EV vehicles are fully supported!
 2. Check that your integration is working (try controls from the integration directly)
 3. Ensure you're not in valet mode (disables remote controls)
 
-### Sensors show "—" or "Unknown"
+### Something isn't showing
+The card only shows what your vehicle reports. Anything missing or unavailable is hidden, so which sections you see depends on your car, region and integration version.
+
 1. Verify integration is installed and working
 2. Check that you have the required versions (API v3.54.0+, Integration v2.49.0+)
 3. Try forcing an update from the integration

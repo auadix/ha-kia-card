@@ -1,0 +1,252 @@
+// Runs the real card against a stub DOM and a fake hass. Run with: node --test tests/
+const test = require('node:test');
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
+const vm = require('node:vm');
+
+const fixtures = require('./fixtures/entities.json');
+
+function loadCard() {
+  const elements = {};
+  class HTMLElement {
+    attachShadow() {
+      const listeners = {};
+      this.shadowRoot = {
+        innerHTML: '',
+        listeners,
+        getElementById: (id) => ({
+          addEventListener: (type, fn) => { listeners[id] = fn; },
+        }),
+      };
+      return this.shadowRoot;
+    }
+  }
+  const sandbox = {
+    HTMLElement,
+    console: { info() {} },
+    window: {},
+    document: {},
+    customElements: { define: (name, cls) => { elements[name] = cls; } },
+  };
+  vm.createContext(sandbox);
+  vm.runInContext(fs.readFileSync(path.join(__dirname, '..', 'kia-vehicle-card.js'), 'utf8'), sandbox);
+  return elements;
+}
+
+const elements = loadCard();
+const SERVICES = ['start_climate', 'stop_climate', 'force_update', 'start_hazard_lights_and_horn'];
+const services = { kia_uvo: Object.fromEntries(SERVICES.map((name) => [name, {}])) };
+
+const entity = (state, attributes = {}) => ({ state, attributes });
+
+const visibleText = (card) => card.shadowRoot.innerHTML
+  .replace(/<style[\s\S]*?<\/style>/g, '')
+  .replace(/<!--[\s\S]*?-->/g, '')
+  .replace(/<[^>]+>/g, ' ')
+  .replace(/\s+/g, ' ')
+  .trim();
+
+function mount(config, hass) {
+  const card = new elements['kia-vehicle-card']();
+  card.setConfig(config);
+  card.hass = { callService() {}, services, ...hass };
+  return card;
+}
+
+// Builds a hass from fixture entries, every one in the given state.
+function install(list, { prefix, deviceId, state = 'off' }) {
+  const states = {};
+  const entities = {};
+  for (const { domain, suffix, translation_key: tk } of list) {
+    const id = `${domain}.${prefix}_${suffix}`;
+    states[id] = entity(state);
+    entities[id] = { entity_id: id, platform: 'kia_uvo', device_id: deviceId, translation_key: tk };
+  }
+  return { states, entities, devices: { [deviceId]: { name: 'Family Car' } } };
+}
+
+test('no entities at all claims nothing about the car', () => {
+  const text = visibleText(mount({ vehicle_id: 'car' }, { states: {} }));
+  assert.match(text, /No vehicle entities found/);
+  for (const claim of ['Unlocked', 'Locked', 'All Closed', 'All Good', 'All OK', 'Parked', 'Inactive', '—']) {
+    assert.ok(!text.includes(claim), `should not show "${claim}": ${text}`);
+  }
+});
+
+test('unavailable entities are treated as unknown, not as closed or fine', () => {
+  const hass = install(fixtures.upstream, { prefix: 'car', deviceId: 'd1', state: 'unavailable' });
+  const text = visibleText(mount({ device_id: 'd1', name: 'Reloading' }, hass));
+  assert.match(text, /Reloading/);
+  for (const claim of ['Unlocked', 'All Closed', 'All Good', 'All OK', 'Parked', '—', 'Updated']) {
+    assert.ok(!text.includes(claim), `should not show "${claim}": ${text}`);
+  }
+});
+
+test('one known entity shows only that value', () => {
+  const text = visibleText(mount({ vehicle_id: 'car' }, { states: { 'sensor.car_odometer': entity('12000') } }));
+  assert.match(text, /12,000 mi/);
+  for (const claim of ['Fuel', 'Tire Pressure', 'Vehicle Health', 'Valet', 'Doors', 'Link Status']) {
+    assert.ok(!text.includes(claim), `should not show "${claim}": ${text}`);
+  }
+});
+
+test('every ENTITIES entry resolves on the fork and on upstream where it exists', () => {
+  const src = fs.readFileSync(path.join(__dirname, '..', 'kia-vehicle-card.js'), 'utf8');
+  const keys = [...src.slice(src.indexOf('const ENTITIES'), src.indexOf('const escapeHtml')).matchAll(/^ {2}(\w+): ent\(/gm)].map((m) => m[1]);
+  assert.ok(keys.length > 70);
+
+  const forkOnly = new Set(['tailLampFault', 'stopLampFault', 'carBatteryWarningLevel', 'linkStatus', 'roadsideStatus',
+    'speed', 'heading', 'weatherType', 'valetMode']);
+  const absentFromFork = new Set(['geocodedLocation']);
+  const neither = new Set(['vehicleStatus', 'drivingStatus', 'weatherTemperature', 'locationSensor',
+    'headlampLeftHigh', 'headlampRightHigh', 'headlampLeftBifunc', 'headlampRightBifunc',
+    'tirePressureFrontLeft', 'tirePressureFrontRight', 'tirePressureRearLeft', 'tirePressureRearRight']);
+
+  const upstream = mount({ device_id: 'u1' }, install(fixtures.upstream, { prefix: 'renamed_car', deviceId: 'u1' }));
+  const fork = mount({ vehicle_id: 'kikia' }, { states: install(fixtures.fork, { prefix: 'kikia', deviceId: 'f1' }).states });
+
+  const missing = { upstream: [], fork: [] };
+  for (const key of keys) {
+    if (!forkOnly.has(key) && !['vehicleStatus', 'drivingStatus', 'weatherTemperature', 'locationSensor'].includes(key)
+      && !upstream.entityId(key)) missing.upstream.push(key);
+    if (!neither.has(key) && !absentFromFork.has(key) && !fork.entityId(key)) missing.fork.push(key);
+  }
+  assert.deepEqual(missing, { upstream: [], fork: [] });
+});
+
+test('picking a device finds entities by translation key, whatever they are called', () => {
+  const hass = {
+    states: { 'sensor.weird_name': entity('55'), 'lock.other_thing': entity('locked') },
+    entities: {
+      'sensor.weird_name': { entity_id: 'sensor.weird_name', platform: 'kia_uvo', device_id: 'd1', translation_key: 'fuel_level' },
+      'lock.other_thing': { entity_id: 'lock.other_thing', platform: 'kia_uvo', device_id: 'd1', translation_key: 'door_lock' },
+    },
+  };
+  const text = visibleText(mount({ device_id: 'd1' }, hass));
+  assert.match(text, /55/);
+  assert.match(text, /Locked/);
+});
+
+test('an old vehicle_id config still works and gains the device id', async () => {
+  const hass = install(fixtures.upstream, { prefix: 'kikia', deviceId: 'd9' });
+  hass.states['lock.kikia_door_lock'] = entity('locked');
+  const calls = [];
+  hass.callService = (...args) => calls.push(args);
+  const card = mount({ vehicle_id: 'kikia' }, hass);
+  assert.equal(card.deviceId, 'd9');
+  card.shadowRoot.listeners['btn-refresh']();
+  assert.deepEqual(JSON.parse(JSON.stringify(calls)), [['kia_uvo', 'force_update', { device_id: 'd9' }]]);
+});
+
+test('a second vehicle does not leak into the first', () => {
+  const a = install(fixtures.upstream, { prefix: 'car_a', deviceId: 'a' });
+  const b = install(fixtures.upstream, { prefix: 'car_b', deviceId: 'b' });
+  const hass = { states: { ...a.states, ...b.states }, entities: { ...a.entities, ...b.entities } };
+  hass.states['sensor.car_b_fuel_level'] = entity('11');
+  hass.states['sensor.car_a_fuel_level'] = entity('77');
+  assert.equal(mount({ device_id: 'b' }, hass).stateOf('fuelLevel'), '11');
+  assert.equal(mount({ vehicle_id: 'car_a' }, hass).stateOf('fuelLevel'), '77');
+});
+
+test('renamed lamp and oil warnings fire on stock upstream names', () => {
+  const hass = install(fixtures.upstream, { prefix: 'car', deviceId: 'd1' });
+  hass.states['binary_sensor.car_rear_left_lamp_fault'] = entity('on');
+  hass.states['binary_sensor.car_oil_level_warning'] = entity('on');
+  hass.states['binary_sensor.car_headlamp_left_high_fault'] = entity('on');
+  const text = visibleText(mount({ device_id: 'd1' }, hass));
+  assert.match(text, /Left Brake Light Fault/);
+  assert.match(text, /Check Engine Oil/);
+  assert.match(text, /Left High Beam Fault/);
+});
+
+test('fork diagnostics show when present and stay hidden otherwise', () => {
+  const states = {
+    'sensor.kikia_car_battery_warning_level': entity('100'),
+    'sensor.kikia_link_status': entity('0'),
+    'sensor.kikia_roadside_assistance_status': entity('0'),
+  };
+  const text = visibleText(mount({ vehicle_id: 'kikia' }, { states }));
+  assert.match(text, /12V Warning Level 100/);
+  assert.match(text, /Link Status 0/);
+  assert.match(text, /Roadside Assistance 0/);
+});
+
+test('location prefers an address and never shows not_home', () => {
+  const tracker = entity('not_home', { latitude: 1, longitude: 2 });
+  const withAddress = visibleText(mount({ vehicle_id: 'car' }, {
+    states: { 'device_tracker.car_location': tracker, 'sensor.car_geocoded_location': entity('12 Main St') },
+  }));
+  assert.match(withAddress, /12 Main St/);
+  const withoutAddress = visibleText(mount({ vehicle_id: 'car' }, { states: { 'device_tracker.car_location': tracker } }));
+  assert.match(withoutAddress, /View on map/);
+  assert.ok(!withoutAddress.includes('not_home'));
+});
+
+test('heading falls back to the raw payload when the sensor has no number', () => {
+  const states = {
+    'sensor.car_heading': entity('unknown'),
+    'sensor.car_data': entity('on', { vehicle_data: { lastVehicleInfo: { location: { head: 162 } } } }),
+  };
+  assert.match(mount({ vehicle_id: 'car' }, { states }).shadowRoot.innerHTML, /Heading: 162°/);
+  states['sensor.car_heading'] = entity('90');
+  assert.match(mount({ vehicle_id: 'car' }, { states }).shadowRoot.innerHTML, /Heading: 90°/);
+});
+
+test('EV range resolves from its real entity name', () => {
+  const text = visibleText(mount({ vehicle_id: 'car' }, {
+    states: { 'sensor.car_ev_battery_level': entity('80'), 'sensor.car_ev_range': entity('250', { unit_of_measurement: 'km' }) },
+  }));
+  assert.match(text, /EV: 80% · 250 km/);
+});
+
+test('tires: unknown is neither OK nor a warning, an open warning still shows', () => {
+  const only = { 'binary_sensor.car_tire_pressure_front_left': entity('on') };
+  const card = mount({ vehicle_id: 'car' }, { states: only });
+  assert.match(visibleText(card), /Check Tires/);
+  card._showTirePressure = true;
+  card.render();
+  assert.equal((card.shadowRoot.innerHTML.match(/class="tire /g) || []).length, 1);
+});
+
+test('controls appear only when they can work', () => {
+  const states = { 'sensor.car_odometer': entity('1') };
+  const none = visibleText(mount({ vehicle_id: 'car' }, { states, services: {} }));
+  for (const label of ['Lock', 'Climate Start', 'More', 'Update']) assert.ok(!none.includes(label));
+  const some = mount({ vehicle_id: 'car' }, { states, services });
+  assert.match(visibleText(some), /Climate Start/);
+  assert.match(some.shadowRoot.innerHTML, /repeat\(3, 1fr\)/);
+});
+
+test('no config shows the setup message; text from entities is escaped', () => {
+  assert.match(visibleText(mount({}, { states: {} })), /Select your vehicle/);
+  const card = mount({ vehicle_id: 'car', name: '<b>x</b>' }, {
+    states: { 'sensor.car_geocoded_location': entity('<img src=x onerror=alert(1)>') },
+  });
+  assert.ok(!card.shadowRoot.innerHTML.includes('<img src=x'));
+  assert.ok(!card.shadowRoot.innerHTML.includes('<b>x</b>'));
+});
+
+test('default config picks a real vehicle and never ships a personal prefix', () => {
+  const hass = install(fixtures.upstream, { prefix: 'car', deviceId: 'd1' });
+  const stub = elements['kia-vehicle-card'].getStubConfig(hass);
+  assert.equal(stub.device_id, 'd1');
+  assert.equal(stub.name, 'Family Car');
+  assert.equal(stub.vehicle_id, undefined);
+  assert.ok(!fs.readFileSync(path.join(__dirname, '..', 'kia-vehicle-card.js'), 'utf8').includes("'kikia'"));
+});
+
+test('editor offers vehicles and does not rebuild on unrelated hass updates', () => {
+  const hass = install(fixtures.upstream, { prefix: 'car', deviceId: 'd1' });
+  const editor = new elements['kia-vehicle-card-editor']();
+  editor.querySelector = () => null;
+  let renders = 0;
+  const render = editor.render.bind(editor);
+  editor.render = () => { renders += 1; render(); };
+  editor.setConfig({ device_id: 'd1' });
+  editor.hass = hass;
+  assert.match(editor.innerHTML, /<option value="d1" selected>Family Car/);
+  editor.hass = { ...hass, states: { ...hass.states } };
+  editor.setConfig({ device_id: 'd1' });
+  assert.equal(renders, 1);
+});

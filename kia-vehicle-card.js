@@ -37,6 +37,166 @@
  * - Lock/Unlock toggle, Horn, Update controls
  */
 
+const INTEGRATION_DOMAIN = 'kia_uvo';
+const UNKNOWN_STATES = new Set(['unavailable', 'unknown', '', '--', '—']);
+
+// ent(domain, translation_key, ...entity id suffixes)
+// translation_key is how current kia_uvo identifies an entity, whatever its id.
+// The suffixes cover older installs and forks, which have no translation_key.
+// A null translation_key means the entity only exists in the auadix fork.
+const ent = (domain, tk, ...suffixes) => ({ domain, tk, suffixes: suffixes.length ? suffixes : [tk] });
+
+const ENTITIES = {
+  // Main stats
+  fuelRange: ent('sensor', 'fuel_driving_range'),
+  totalRange: ent('sensor', 'total_driving_range'),
+  evRange: ent('sensor', 'ev_driving_range', 'ev_range', 'ev_driving_range'),
+  fuelLevel: ent('sensor', 'fuel_level'),
+  carBattery: ent('sensor', 'car_battery_percentage', 'car_battery_level'),
+  evBattery: ent('sensor', 'ev_battery_percentage', 'ev_battery_level'),
+  odometer: ent('sensor', 'odometer'),
+  nextService: ent('sensor', 'next_service_distance', 'next_service', 'next_service_distance'),
+  // Status
+  lock: ent('lock', 'door_lock'),
+  engine: ent('binary_sensor', 'engine_is_running', 'engine'),
+  airCon: ent('binary_sensor', 'air_control_is_on', 'air_conditioner'),
+  defrost: ent('binary_sensor', 'defrost_is_on', 'defrost'),
+  evCharging: ent('binary_sensor', 'ev_battery_is_charging', 'ev_battery_charge'),
+  evPlugged: ent('binary_sensor', 'ev_battery_is_plugged_in', 'ev_battery_plug'),
+  vehicleStatus: ent('sensor', null, 'vehicle_status'),
+  drivingStatus: ent('sensor', null, 'driving_status'),
+  valetMode: ent('binary_sensor', null, 'valet_mode'),
+  dtcCount: ent('sensor', 'dtc_count'),
+  // Doors
+  doorFrontLeft: ent('binary_sensor', 'front_left_door_is_open', 'front_left_door'),
+  doorFrontRight: ent('binary_sensor', 'front_right_door_is_open', 'front_right_door'),
+  doorBackLeft: ent('binary_sensor', 'back_left_door_is_open', 'back_left_door'),
+  doorBackRight: ent('binary_sensor', 'back_right_door_is_open', 'back_right_door'),
+  trunk: ent('binary_sensor', 'trunk_is_open', 'trunk'),
+  hood: ent('binary_sensor', 'hood_is_open', 'hood'),
+  // Windows
+  windowFrontLeft: ent('binary_sensor', 'front_left_window_is_open', 'front_left_window'),
+  windowFrontRight: ent('binary_sensor', 'front_right_window_is_open', 'front_right_window'),
+  windowBackLeft: ent('binary_sensor', 'back_left_window_is_open', 'back_left_window'),
+  windowBackRight: ent('binary_sensor', 'back_right_window_is_open', 'back_right_window'),
+  sunroof: ent('binary_sensor', 'sunroof_is_open', 'sunroof'),
+  // Tires: warnings, plus measured pressure where the integration reports it
+  tireWarnAll: ent('binary_sensor', 'tire_pressure_all_warning_is_on', 'tire_pressure_all'),
+  tireWarnFrontLeft: ent('binary_sensor', 'tire_pressure_front_left_warning_is_on', 'tire_pressure_front_left'),
+  tireWarnFrontRight: ent('binary_sensor', 'tire_pressure_front_right_warning_is_on', 'tire_pressure_front_right'),
+  tireWarnRearLeft: ent('binary_sensor', 'tire_pressure_rear_left_warning_is_on', 'tire_pressure_rear_left'),
+  tireWarnRearRight: ent('binary_sensor', 'tire_pressure_rear_right_warning_is_on', 'tire_pressure_rear_right'),
+  tirePressureFrontLeft: ent('sensor', 'tire_pressure_front_left'),
+  tirePressureFrontRight: ent('sensor', 'tire_pressure_front_right'),
+  tirePressureRearLeft: ent('sensor', 'tire_pressure_rear_left'),
+  tirePressureRearRight: ent('sensor', 'tire_pressure_rear_right'),
+  // Location and time
+  tracker: ent('device_tracker', 'location'),
+  geocodedLocation: ent('sensor', 'geocode_name', 'geocoded_location'),
+  locationSensor: ent('sensor', null, 'location'),
+  lastUpdated: ent('sensor', 'last_updated_at'),
+  heading: ent('sensor', null, 'heading'),
+  speed: ent('sensor', null, 'speed'),
+  // Weather and climate
+  weatherTemperature: ent('sensor', null, 'weather_temperature'),
+  outsideTemperature: ent('sensor', 'outside_temperature'),
+  weatherType: ent('sensor', null, 'weather_type'),
+  setTemperature: ent('sensor', 'air_temperature', 'set_temperature'),
+  steeringWheelHeater: ent('binary_sensor', 'steering_wheel_heater_is_on', 'steering_wheel_heater'),
+  sideMirrorHeater: ent('binary_sensor', 'side_mirror_heater_is_on', 'side_mirror_heater'),
+  backWindowHeater: ent('binary_sensor', 'back_window_heater_is_on', 'back_window_heater'),
+  // Diagnostics
+  carBatteryWarningLevel: ent('sensor', null, 'car_battery_warning_level'),
+  linkStatus: ent('sensor', null, 'link_status'),
+  roadsideStatus: ent('sensor', null, 'roadside_assistance_status'),
+  // Alerts
+  washerFluid: ent('binary_sensor', 'washer_fluid_warning_is_on', 'washer_fluid_warning'),
+  lowFuel: ent('binary_sensor', 'fuel_level_is_low', 'fuel_low_level'),
+  smartKeyBattery: ent('binary_sensor', 'smart_key_battery_warning_is_on', 'smart_key_battery_warning'),
+  brakeFluid: ent('binary_sensor', 'brake_fluid_warning_is_on', 'brake_fluid_warning'),
+  engineOil: ent('binary_sensor', 'oil_level_warning_is_on', 'oil_level_warning', 'engine_oil_warning'),
+  headlightFault: ent('binary_sensor', 'headlamp_status', 'headlamp_status', 'headlight_fault'),
+  headlampLeftLow: ent('binary_sensor', 'headlamp_left_low', 'front_left_lamp_fault', 'headlamp_left_low_fault'),
+  headlampRightLow: ent('binary_sensor', 'headlamp_right_low', 'front_right_lamp_fault', 'headlamp_right_low_fault'),
+  headlampLeftHigh: ent('binary_sensor', 'headlamp_left_high', 'headlamp_left_high_fault'),
+  headlampRightHigh: ent('binary_sensor', 'headlamp_right_high', 'headlamp_right_high_fault'),
+  headlampLeftBifunc: ent('binary_sensor', 'headlamp_left_bifunc', 'headlamp_left_bifunctional_fault'),
+  headlampRightBifunc: ent('binary_sensor', 'headlamp_right_bifunc', 'headlamp_right_bifunctional_fault'),
+  stopLampLeft: ent('binary_sensor', 'stop_lamp_left', 'rear_left_lamp_fault', 'stop_lamp_left_fault'),
+  stopLampRight: ent('binary_sensor', 'stop_lamp_right', 'rear_right_lamp_fault', 'stop_lamp_right_fault'),
+  turnSignalLeftFront: ent('binary_sensor', 'turn_signal_left_front', 'turn_signal_left_front', 'turn_signal_left_front_fault'),
+  turnSignalRightFront: ent('binary_sensor', 'turn_signal_right_front', 'turn_signal_right_front', 'turn_signal_right_front_fault'),
+  turnSignalLeftRear: ent('binary_sensor', 'turn_signal_left_rear', 'turn_signal_left_rear', 'turn_signal_left_rear_fault'),
+  turnSignalRightRear: ent('binary_sensor', 'turn_signal_right_rear', 'turn_signal_right_rear', 'turn_signal_right_rear_fault'),
+  tailLampFault: ent('binary_sensor', null, 'tail_lamp_fault'),
+  stopLampFault: ent('binary_sensor', null, 'stop_lamp_fault'),
+  hazardLights: ent('binary_sensor', 'hazard_lights_on', 'hazard_lights'),
+  // Raw API payload
+  data: ent('sensor', 'data', 'data', 'all_data'),
+};
+
+const escapeHtml = (value) => String(value ?? '').replace(/[&<>"']/g, (c) => (
+  { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]
+));
+
+// Vehicles the integration has registered: [{ id, name }]
+function findVehicleDevices(hass) {
+  const ids = new Set();
+  for (const entry of Object.values(hass?.entities ?? {})) {
+    if (entry.platform === INTEGRATION_DOMAIN && entry.device_id) ids.add(entry.device_id);
+  }
+  return [...ids].map((id) => {
+    const device = hass?.devices?.[id];
+    return { id, name: device?.name_by_user || device?.name || id };
+  });
+}
+
+// Longest shared "<prefix>_" of a device's entities, e.g. "my_car" from my_car_odometer
+function commonObjectIdPrefix(entityIds) {
+  const objectIds = entityIds.map((id) => id.split('.')[1]);
+  if (objectIds.length < 2) return null;
+  const parts = objectIds[0].split('_');
+  let length = 0;
+  while (length < parts.length - 1 && objectIds.every((id) => id.split('_')[length] === parts[length])) {
+    length += 1;
+  }
+  return length ? parts.slice(0, length).join('_') : null;
+}
+
+// Finds the vehicle's device and how its entities are named. Rebuilt only when
+// the entity registry or the card config changes.
+function buildEntityIndex(hass, config) {
+  const registry = Object.values(hass?.entities ?? {});
+  const vehicleId = config.vehicle_id || '';
+  const hasEntries = (id) => registry.some((entry) => entry.device_id === id);
+
+  let deviceId = config.device_id && hasEntries(config.device_id) ? config.device_id : null;
+  if (!deviceId && vehicleId) {
+    const prefixes = [`.${vehicleId}_`, `.${vehicleId.toLowerCase()}_`];
+    const match = registry.find((entry) => entry.device_id && entry.platform === INTEGRATION_DOMAIN
+      && prefixes.some((prefix) => entry.entity_id.includes(prefix)));
+    deviceId = match?.device_id ?? null;
+  }
+
+  const onDevice = deviceId ? registry.filter((entry) => entry.device_id === deviceId) : [];
+  const own = onDevice.filter((entry) => entry.platform === INTEGRATION_DOMAIN);
+  const entries = own.length ? own : onDevice;
+
+  const byTranslationKey = new Map();
+  for (const entry of entries) {
+    if (entry.translation_key) {
+      byTranslationKey.set(`${entry.entity_id.split('.')[0]}:${entry.translation_key}`, entry.entity_id);
+    }
+  }
+
+  const prefixes = [vehicleId, vehicleId.toLowerCase(), commonObjectIdPrefix(entries.map((entry) => entry.entity_id))];
+  return {
+    deviceId: deviceId || config.device_id || null,
+    byTranslationKey,
+    prefixes: [...new Set(prefixes.filter(Boolean))],
+  };
+}
+
 class KiaVehicleCard extends HTMLElement {
   constructor() {
     super();
@@ -74,6 +234,8 @@ class KiaVehicleCard extends HTMLElement {
   setConfig(config) {
     if (!config || typeof config !== 'object') return;
     this._config = { ...this._config, ...config };
+    this._index = null;
+    if (this._hass) this.render();
   }
 
   get config() {
@@ -81,22 +243,64 @@ class KiaVehicleCard extends HTMLElement {
   }
 
   set hass(hass) {
+    if (hass?.entities !== this._hass?.entities) this._index = null;
     this._hass = hass;
-    if (this._config.vehicle_id) {
-      this.render();
+    this.render();
+  }
+
+  get index() {
+    if (!this._index) this._index = buildEntityIndex(this._hass, this._config);
+    return this._index;
+  }
+
+  // The real entity id behind an ENTITIES key, or null if this car doesn't have it
+  entityId(key) {
+    const { domain, tk, suffixes } = ENTITIES[key];
+    const states = this._hass?.states ?? {};
+    const registered = tk ? this.index.byTranslationKey.get(`${domain}:${tk}`) : null;
+    if (registered && states[registered]) return registered;
+    for (const prefix of this.index.prefixes) {
+      for (const suffix of suffixes) {
+        const candidate = `${domain}.${prefix}_${suffix}`;
+        if (states[candidate]) return candidate;
+      }
     }
+    return null;
   }
 
-  getState(entityId) {
-    if (!this._hass?.states) return 'unavailable';
-    const entity = this._hass.states[entityId];
-    return entity ? entity.state : 'unavailable';
+  // State text, or null when missing or not currently known
+  stateOf(key) {
+    const id = this.entityId(key);
+    const state = id ? this._hass.states[id].state : null;
+    return state === null || UNKNOWN_STATES.has(state) ? null : state;
   }
 
-  getAttr(entityId, attr) {
-    if (!this._hass?.states) return null;
-    const entity = this._hass.states[entityId];
-    return entity?.attributes?.[attr] ?? null;
+  // true, false, or null when missing or not currently known
+  boolOf(key) {
+    const state = this.stateOf(key);
+    if (state === 'on') return true;
+    return state === 'off' ? false : null;
+  }
+
+  attrOf(key, attr) {
+    const id = this.entityId(key);
+    return id ? this._hass.states[id].attributes?.[attr] ?? null : null;
+  }
+
+  hasService(service) {
+    return !!this._hass?.services?.[INTEGRATION_DOMAIN]?.[service];
+  }
+
+  get deviceId() {
+    return this.index.deviceId;
+  }
+
+  // "12.5 psi" style value using the entity's own unit, or null
+  measurement(key) {
+    const value = this.stateOf(key);
+    if (value === null) return null;
+    const unit = this.attrOf(key, 'unit_of_measurement');
+    return unit ? `${value} ${unit}` : value;
   }
 
   formatNumber(num) {
@@ -111,204 +315,204 @@ class KiaVehicleCard extends HTMLElement {
     }
   }
 
+  renderMessage(html) {
+    this.shadowRoot.innerHTML = `
+      <ha-card>
+        <div style="padding: 24px; text-align: center; color: var(--secondary-text-color);">${html}</div>
+      </ha-card>
+    `;
+  }
+
   render() {
-    if (!this._hass || !this._config?.vehicle_id) {
-      this.shadowRoot.innerHTML = `
-        <ha-card>
-          <div style="padding: 24px; text-align: center; color: var(--secondary-text-color);">
-            Please configure <code>vehicle_id</code> in the card editor.
-          </div>
-        </ha-card>
-      `;
+    if (!this._hass) return;
+    const { vehicle_id: vehicleId, device_id: deviceId } = this._config;
+    if (!vehicleId && !deviceId) {
+      this.renderMessage('Select your vehicle in the card editor.');
+      return;
+    }
+    if (!Object.keys(ENTITIES).some((key) => this.entityId(key))) {
+      this.renderMessage(`No vehicle entities found for <code>${escapeHtml(vehicleId || deviceId)}</code>. Check the vehicle in the card editor.`);
       return;
     }
 
-    const vid = this._config.vehicle_id;
-    const getVal = (s) => (s && s !== 'unavailable' && s !== '--' && s !== 'unknown') ? s : '—';
     const getNum = (s) => { const n = parseFloat(s); return isNaN(n) ? 0 : n; };
-    const getBool = (entityId) => this.getState(entityId) === 'on';
+    const bool = (key) => this.boolOf(key);
+    const lockState = this.stateOf('lock');
+    const tracker = this.stateOf('tracker');
+    const trackerId = this.entityId('tracker');
+    const rawInfo = this._hass.states[this.entityId('data')]?.attributes?.vehicle_data?.lastVehicleInfo;
+    const rawStatus = rawInfo?.vehicleStatusRpt?.vehicleStatus;
 
-    // Gather data
+    // Gather data. null always means "unknown": hide it, never assume it's fine.
     const data = {
       // Main stats
-      range: getVal(this.getState(`sensor.${vid}_fuel_driving_range`) || this.getState(`sensor.${vid}_ev_driving_range`)),
-      fuel: getVal(this.getState(`sensor.${vid}_fuel_level`)),
-      battery: getVal(this.getState(`sensor.${vid}_car_battery_level`)),
-      evBattery: getVal(this.getState(`sensor.${vid}_ev_battery_level`)),
-      odometer: getVal(this.getState(`sensor.${vid}_odometer`)),
+      range: this.stateOf('fuelRange') ?? this.stateOf('totalRange') ?? this.stateOf('evRange'),
+      fuel: this.stateOf('fuelLevel'),
+      battery: this.stateOf('carBattery'),
+      evBattery: this.stateOf('evBattery'),
+      odometer: this.stateOf('odometer'),
 
       // Status - use lock entity directly (most reliable)
-      locked: this.getState(`lock.${vid}_door_lock`) === 'locked',
-      engine: getBool(`binary_sensor.${vid}_engine`),
-      airCon: getBool(`binary_sensor.${vid}_air_conditioner`),
-      defrost: getBool(`binary_sensor.${vid}_defrost`),
-      charging: getBool(`binary_sensor.${vid}_ev_battery_charge`),
+      locked: lockState === null ? null : lockState === 'locked',
+      engine: bool('engine'),
+      airCon: bool('airCon'),
+      defrost: bool('defrost'),
 
       // Vehicle status (Parked/Driving) - from various possible entities
-      vehicleStatus: this.getVehicleStatus(vid),
+      vehicleStatus: this.getVehicleStatus(),
 
       // Doors
-      frontLeftDoor: getBool(`binary_sensor.${vid}_front_left_door`),
-      frontRightDoor: getBool(`binary_sensor.${vid}_front_right_door`),
-      backLeftDoor: getBool(`binary_sensor.${vid}_back_left_door`),
-      backRightDoor: getBool(`binary_sensor.${vid}_back_right_door`),
-      trunk: getBool(`binary_sensor.${vid}_trunk`),
-      hood: getBool(`binary_sensor.${vid}_hood`),
+      frontLeftDoor: bool('doorFrontLeft'),
+      frontRightDoor: bool('doorFrontRight'),
+      backLeftDoor: bool('doorBackLeft'),
+      backRightDoor: bool('doorBackRight'),
+      trunk: bool('trunk'),
+      hood: bool('hood'),
 
       // Additional status
-      valetMode: getBool(`binary_sensor.${vid}_valet_mode`),
-      dtcCount: getVal(this.getState(`sensor.${vid}_dtc_count`)),
+      valetMode: bool('valetMode'),
+      dtcCount: this.stateOf('dtcCount'),
 
-      // Tire pressure warnings - use individual sensors
-      tirePressureWarning: getBool(`binary_sensor.${vid}_tire_pressure_all`),
-      tireFrontLeft: !getBool(`binary_sensor.${vid}_tire_pressure_front_left`),
-      tireFrontRight: !getBool(`binary_sensor.${vid}_tire_pressure_front_right`),
-      tireRearLeft: !getBool(`binary_sensor.${vid}_tire_pressure_rear_left`),
-      tireRearRight: !getBool(`binary_sensor.${vid}_tire_pressure_rear_right`),
+      // Tires: true = warning, false = fine, null = unknown
+      tirePressureWarning: bool('tireWarnAll'),
+      tireFrontLeft: bool('tireWarnFrontLeft'),
+      tireFrontRight: bool('tireWarnFrontRight'),
+      tireRearLeft: bool('tireWarnRearLeft'),
+      tireRearRight: bool('tireWarnRearRight'),
 
-      // Location & time
-      location: getVal(this.getState(`device_tracker.${vid}_location`) || this.getState(`sensor.${vid}_geocoded_location`) || this.getState(`sensor.${vid}_location`)),
-      lastUpdated: getVal(this.getState(`sensor.${vid}_last_updated_at`)),
+      // Location & time. A device tracker's state is only a zone name, so prefer
+      // a real address and never show its raw not_home value.
+      location: this.stateOf('geocodedLocation') ?? this.stateOf('locationSensor')
+        ?? (tracker === 'home' ? 'Home' : tracker === 'not_home' ? null : tracker),
+      lastUpdated: this.stateOf('lastUpdated'),
 
       // Lat/Long for map link
-      latitude: this._hass.states[`device_tracker.${vid}_location`]?.attributes?.latitude,
-      longitude: this._hass.states[`device_tracker.${vid}_location`]?.attributes?.longitude,
+      latitude: this._hass.states[trackerId]?.attributes?.latitude,
+      longitude: this._hass.states[trackerId]?.attributes?.longitude,
 
       // Heading/Direction - try sensor first, then data attribute
-      heading: (() => {
-        const tryHeading = (id) => {
-          const s = this.getState(`sensor.${id}_heading`);
-          return (s && s !== 'unavailable' && s !== 'unknown') ? parseFloat(s) : null;
-        };
+      heading: [this.stateOf('heading'), rawInfo?.location?.head]
+        .map(parseFloat).find((value) => !isNaN(value)) ?? null,
 
-        // Try exact ID match first, then lowercase ID
-        const val = tryHeading(vid) ?? tryHeading(vid.toLowerCase());
-        if (val !== null && !isNaN(val)) return val;
-
-        // Fallback to data attribute
-        const dataHeading = this._hass.states[`sensor.${vid}_data`]?.attributes?.vehicle_data?.lastVehicleInfo?.location?.head;
-        return (dataHeading !== undefined && dataHeading !== null) ? parseFloat(dataHeading) : null;
+      // Weather at vehicle location
+      weatherTemp: this.measurement('weatherTemperature') ?? this.measurement('outsideTemperature') ?? (() => {
+        const rawTemp = rawInfo?.weather?.outsideTemp?.[1]?.value;
+        return UNKNOWN_STATES.has(rawTemp ?? '') ? null : rawTemp;
       })(),
-
-      // Weather at vehicle location - read from data sensor attributes
-      weatherTemp: (() => {
-        const tempSensor = this.getState(`sensor.${vid}_weather_temperature`);
-        if (tempSensor && tempSensor !== 'unavailable' && tempSensor !== 'unknown') return tempSensor;
-        const outsideTemp = this.getState(`sensor.${vid}_outside_temperature`);
-        if (outsideTemp && outsideTemp !== 'unavailable' && outsideTemp !== 'unknown') return outsideTemp;
-        // Fallback to data attribute
-        const dataTemp = this._hass.states[`sensor.${vid}_data`]?.attributes?.vehicle_data?.lastVehicleInfo?.weather?.outsideTemp?.[1]?.value;
-        return (dataTemp && dataTemp !== '--') ? dataTemp : '—';
-      })(),
-      weatherType: (() => {
-        const typeSensor = this.getState(`sensor.${vid}_weather_type`);
-        if (typeSensor && typeSensor !== 'unavailable' && typeSensor !== 'unknown') return typeSensor;
-        // Fallback to data attribute
-        const dataType = this._hass.states[`sensor.${vid}_data`]?.attributes?.vehicle_data?.lastVehicleInfo?.weather?.weatherType;
-        return dataType || '—';
-      })(),
+      weatherType: this.stateOf('weatherType') ?? rawInfo?.weather?.weatherType ?? null,
 
       // Service info
-      nextService: getVal(this.getState(`sensor.${vid}_next_service`) || this.getState(`sensor.${vid}_next_service_distance`)),
+      nextService: this.stateOf('nextService'),
 
-      // NEW SENSORS (v2.7.0) - Speed and diagnostic numeric sensors
-      speed: getVal(this.getState(`sensor.${vid}_speed`)),
-      speedUnit: this.getAttr(`sensor.${vid}_speed`, 'unit_of_measurement') || 'km/h',
-      carBatteryWarningLevel: getVal(this.getState(`sensor.${vid}_car_battery_warning_level`)),
-      linkStatus: getVal(this.getState(`sensor.${vid}_link_status`)),
-      rsaStatus: getVal(this.getState(`sensor.${vid}_roadside_assistance_status`)),
+      // Speed and diagnostic numeric sensors
+      speed: this.stateOf('speed'),
+      speedUnit: this.attrOf('speed', 'unit_of_measurement') || 'km/h',
+      carBatteryWarningLevel: this.stateOf('carBatteryWarningLevel'),
+      linkStatus: this.stateOf('linkStatus'),
+      rsaStatus: this.stateOf('roadsideStatus'),
 
       // Warnings / Alerts - use sensors with fallback to data attributes
-      washerFluidWarning: getBool(`binary_sensor.${vid}_washer_fluid_warning`),
-      lowFuel: getBool(`binary_sensor.${vid}_fuel_low_level`),
-      smartKeyBattery: getBool(`binary_sensor.${vid}_smart_key_battery_warning`),
-      // Brake/Engine oil - use sensors if available, fallback to data attributes
-      brakeFluidWarning: getBool(`binary_sensor.${vid}_brake_fluid_warning`) ||
-        this._hass.states[`sensor.${vid}_data`]?.attributes?.vehicle_data?.lastVehicleInfo?.vehicleStatusRpt?.vehicleStatus?.brakeOilStatus === true,
-      engineOilWarning: getBool(`binary_sensor.${vid}_engine_oil_warning`) ||
-        this._hass.states[`sensor.${vid}_data`]?.attributes?.vehicle_data?.lastVehicleInfo?.vehicleStatusRpt?.vehicleStatus?.engineOilStatus === true,
+      washerFluidWarning: bool('washerFluid'),
+      lowFuel: bool('lowFuel'),
+      smartKeyBattery: bool('smartKeyBattery'),
+      brakeFluidWarning: bool('brakeFluid') || rawStatus?.brakeOilStatus === true,
+      engineOilWarning: bool('engineOil') || rawStatus?.engineOilStatus === true,
       // Lamp faults - all individual sensors
-      headlightFault: getBool(`binary_sensor.${vid}_headlight_fault`),
-      headlampLeftFault: getBool(`binary_sensor.${vid}_headlamp_left_low_fault`),
-      headlampRightFault: getBool(`binary_sensor.${vid}_headlamp_right_low_fault`),
-      stopLampLeftFault: getBool(`binary_sensor.${vid}_stop_lamp_left_fault`),
-      stopLampRightFault: getBool(`binary_sensor.${vid}_stop_lamp_right_fault`),
-      turnSignalLeftFrontFault: getBool(`binary_sensor.${vid}_turn_signal_left_front_fault`),
-      turnSignalRightFrontFault: getBool(`binary_sensor.${vid}_turn_signal_right_front_fault`),
-      turnSignalLeftRearFault: getBool(`binary_sensor.${vid}_turn_signal_left_rear_fault`),
-      turnSignalRightRearFault: getBool(`binary_sensor.${vid}_turn_signal_right_rear_fault`),
-
-      // NEW SENSORS (v2.7.0) - Tail lamp and stop lamp faults
-      tailLampFault: getBool(`binary_sensor.${vid}_tail_lamp_fault`),
-      stopLampFault: getBool(`binary_sensor.${vid}_stop_lamp_fault`),
-      hazardLights: getBool(`binary_sensor.${vid}_hazard_lights`),
+      headlightFault: bool('headlightFault'),
+      headlampLeftFault: bool('headlampLeftLow'),
+      headlampRightFault: bool('headlampRightLow'),
+      headlampLeftHighFault: bool('headlampLeftHigh'),
+      headlampRightHighFault: bool('headlampRightHigh'),
+      headlampLeftBifuncFault: bool('headlampLeftBifunc'),
+      headlampRightBifuncFault: bool('headlampRightBifunc'),
+      stopLampLeftFault: bool('stopLampLeft'),
+      stopLampRightFault: bool('stopLampRight'),
+      turnSignalLeftFrontFault: bool('turnSignalLeftFront'),
+      turnSignalRightFrontFault: bool('turnSignalRightFront'),
+      turnSignalLeftRearFault: bool('turnSignalLeftRear'),
+      turnSignalRightRearFault: bool('turnSignalRightRear'),
+      tailLampFault: bool('tailLampFault'),
+      stopLampFault: bool('stopLampFault'),
+      hazardLights: bool('hazardLights'),
 
       // Windows
-      frontLeftWindow: getBool(`binary_sensor.${vid}_front_left_window`),
-      frontRightWindow: getBool(`binary_sensor.${vid}_front_right_window`),
-      backLeftWindow: getBool(`binary_sensor.${vid}_back_left_window`),
-      backRightWindow: getBool(`binary_sensor.${vid}_back_right_window`),
-      sunroof: getBool(`binary_sensor.${vid}_sunroof`),
+      frontLeftWindow: bool('windowFrontLeft'),
+      frontRightWindow: bool('windowFrontRight'),
+      backLeftWindow: bool('windowBackLeft'),
+      backRightWindow: bool('windowBackRight'),
+      sunroof: bool('sunroof'),
 
       // EV specific
-      evCharging: getBool(`binary_sensor.${vid}_ev_battery_charge`),
-      evPluggedIn: getBool(`binary_sensor.${vid}_ev_battery_plug`),
-      evRange: getVal(this.getState(`sensor.${vid}_ev_driving_range`)),
+      evCharging: bool('evCharging'),
+      evPluggedIn: bool('evPlugged'),
+      evRange: this.measurement('evRange'),
 
       // Climate
-      setTemp: getVal(this.getState(`sensor.${vid}_set_temperature`)),
+      setTemp: this.measurement('setTemperature'),
 
-      // Comfort / Heating - read from raw API data (more accurate than binary sensors)
+      // Comfort / Heating - raw API data is more accurate, but only some regions have it
       ...(() => {
-        const heatingData = this._hass.states[`sensor.${vid}_data`]?.attributes?.vehicle_data?.lastVehicleInfo?.vehicleStatusRpt?.vehicleStatus?.climate?.heatingAccessory;
+        const heatingData = rawStatus?.climate?.heatingAccessory;
         return {
-          steeringWheelHeater: heatingData?.steeringWheel > 0,
-          sideMirrorHeater: heatingData?.sideMirror > 0,
-          rearWindowHeater: heatingData?.rearWindow > 0,
+          steeringWheelHeater: heatingData ? heatingData.steeringWheel > 0 : bool('steeringWheelHeater') === true,
+          sideMirrorHeater: heatingData ? heatingData.sideMirror > 0 : bool('sideMirrorHeater') === true,
+          rearWindowHeater: heatingData ? heatingData.rearWindow > 0 : bool('backWindowHeater') === true,
         };
       })(),
       // Seats (from data attribute as they are complex objects)
       seatStatus: (() => {
-        const data = this._hass.states[`sensor.${vid}_data`]?.attributes?.vehicle_data?.lastVehicleInfo?.vehicleStatusRpt?.vehicleStatus?.climate?.heatVentSeat;
-        if (!data) return null;
+        const seats = rawStatus?.climate?.heatVentSeat;
+        if (!seats) return null;
         // heatVentType: 0=Off, 1=Heat, 2=Cool/Vent
         // heatVentLevel: 0=Off, 1-3=Level
         return {
-          driver: data.driverSeat,
-          passenger: data.passengerSeat,
-          rearLeft: data.rearLeftSeat,
-          rearRight: data.rearRightSeat
+          driver: seats.driverSeat,
+          passenger: seats.passengerSeat,
+          rearLeft: seats.rearLeftSeat,
+          rearRight: seats.rearRightSeat
         };
       })(),
     };
 
     const fuelPercent = getNum(data.fuel);
     const batteryPercent = getNum(data.battery);
-    const evBatteryPercent = getNum(data.evBattery);
-    const anyDoorOpen = data.frontLeftDoor || data.frontRightDoor || data.backLeftDoor || data.backRightDoor || data.trunk || data.hood;
-    const anyWindowOpen = data.frontLeftWindow || data.frontRightWindow || data.backLeftWindow || data.backRightWindow || data.sunroof;
+    const doors = [data.frontLeftDoor, data.frontRightDoor, data.backLeftDoor, data.backRightDoor, data.trunk, data.hood];
+    const windows = [data.frontLeftWindow, data.frontRightWindow, data.backLeftWindow, data.backRightWindow, data.sunroof];
+    const hasDoors = doors.some((door) => door !== null);
+    const hasWindows = windows.some((window) => window !== null);
+    const openDoors = doors.filter(Boolean).length;
+    const openWindows = windows.filter(Boolean).length;
+    const anyDoorOpen = openDoors > 0;
+    const anyWindowOpen = openWindows > 0;
     const hasHealthIssue = parseInt(data.dtcCount) > 0;
-    const isEV = data.evBattery !== '—' && data.evBattery !== '0';
+    const isEV = data.evBattery !== null && data.evBattery !== '0';
 
-    // Count open doors/windows for summary
-    const openDoors = [data.frontLeftDoor, data.frontRightDoor, data.backLeftDoor, data.backRightDoor, data.trunk, data.hood].filter(Boolean).length;
-    const openWindows = [data.frontLeftWindow, data.frontRightWindow, data.backLeftWindow, data.backRightWindow, data.sunroof].filter(Boolean).length;
+    // Tires: show the section if anything at all is known about them
+    const tires = [
+      { axle: 'Front', side: 'Left', warning: data.tireFrontLeft, pressure: this.measurement('tirePressureFrontLeft') },
+      { axle: 'Front', side: 'Right', warning: data.tireFrontRight, pressure: this.measurement('tirePressureFrontRight') },
+      { axle: 'Rear', side: 'Left', warning: data.tireRearLeft, pressure: this.measurement('tirePressureRearLeft') },
+      { axle: 'Rear', side: 'Right', warning: data.tireRearRight, pressure: this.measurement('tirePressureRearRight') },
+    ].filter((tire) => tire.warning !== null || tire.pressure !== null);
+    const hasTireStatus = data.tirePressureWarning !== null || tires.some((tire) => tire.warning !== null);
+    const tireWarning = data.tirePressureWarning === true || tires.some((tire) => tire.warning === true);
+
+    // Only offer controls that can work on this install
+    const engineRunning = data.engine === true;
+    const canLock = this.entityId('lock') !== null;
+    const canClimate = this.hasService(engineRunning ? 'stop_climate' : 'start_climate');
+    const canQuickActions = this.hasService('start_hazard_lights_and_horn');
+    const canUpdate = this.hasService('force_update');
+    const controlCount = [canLock, canClimate, canQuickActions, canUpdate].filter(Boolean).length;
 
     // Image handling
     let vehicleImage = this._config.image;
     if (!vehicleImage) {
-      const potentialEntities = [`sensor.${vid}_data`, `sensor.${vid}_all_data`];
-      for (const entityId of potentialEntities) {
-        const attrs = this._hass.states[entityId]?.attributes;
-        if (attrs?.vehicle_image) {
-          vehicleImage = attrs.vehicle_image;
-          break;
-        }
-      }
+      vehicleImage = this.attrOf('data', 'vehicle_image');
     }
 
     const vehicleImageHtml = vehicleImage
-      ? `<img class="vehicle-image" src="${vehicleImage}" alt="Vehicle" />`
+      ? `<img class="vehicle-image" src="${escapeHtml(vehicleImage)}" alt="Vehicle" />`
       : this.getCarSvg(data);
 
     this.shadowRoot.innerHTML = `
@@ -1185,6 +1389,26 @@ class KiaVehicleCard extends HTMLElement {
           animation: charging-pulse 1.5s ease-in-out infinite;
         }
 
+        /* Sections with nothing known to show */
+        .vehicle-info:not(:has(.info-chip)),
+        .stats-column:not(:has(.stat-item, .bar-group)),
+        .status-rows:not(:has(.status-row, .tire-pressure-row)),
+        .footer:not(:has(.footer-item)) {
+          display: none;
+        }
+
+        .main-content:not(:has(.stat-item, .bar-group)) {
+          grid-template-columns: 1fr;
+        }
+
+        .tire-icon.neutral {
+          border-color: var(--text-secondary);
+        }
+
+        .tire-icon.neutral ha-icon {
+          color: var(--text-secondary);
+        }
+
         /* Responsive */
         @media (max-width: 450px) {
           .main-content {
@@ -1203,10 +1427,10 @@ class KiaVehicleCard extends HTMLElement {
       <ha-card>
         <!-- Header -->
         <div class="header">
-          <div class="vehicle-name">${this._config.name}</div>
-          <div class="status-badge ${data.engine ? 'running animate-pulse' : (data.locked ? 'locked' : 'unlocked')}">
-            ${data.engine ? 'Running' : (data.locked ? 'Locked' : 'Unlocked')}
-          </div>
+          <div class="vehicle-name">${escapeHtml(this._config.name)}</div>
+          ${engineRunning ? `<div class="status-badge running animate-pulse">Running</div>`
+            : data.locked === null ? ''
+            : `<div class="status-badge ${data.locked ? 'locked' : 'unlocked'}">${data.locked ? 'Locked' : 'Unlocked'}</div>`}
         </div>
 
         <!-- Main Content -->
@@ -1214,17 +1438,22 @@ class KiaVehicleCard extends HTMLElement {
           <!-- Stats Column -->
           <div class="stats-column">
             <div class="stats-row">
+              ${data.fuel !== null ? `
               <div class="stat-item">
                 <div class="stat-label">Fuel</div>
                 <div class="stat-value">${data.fuel}<span class="stat-unit">%</span></div>
               </div>
+              ` : ''}
+              ${data.range !== null ? `
               <div class="stat-item">
                 <div class="stat-label">Est. Range</div>
                 <div class="stat-value">${this.formatNumber(data.range)}<span class="stat-unit">mi</span></div>
               </div>
+              ` : ''}
             </div>
 
             <div class="bars-container">
+              ${data.fuel !== null ? `
               <div class="bar-group">
                 <div class="bar-header">
                   <span>Fuel</span>
@@ -1234,6 +1463,8 @@ class KiaVehicleCard extends HTMLElement {
                   <div class="progress-fill fuel" style="width: ${fuelPercent}%"></div>
                 </div>
               </div>
+              ` : ''}
+              ${data.battery !== null ? `
               <div class="bar-group">
                 <div class="bar-header">
                   <span>12V Battery</span>
@@ -1243,6 +1474,7 @@ class KiaVehicleCard extends HTMLElement {
                   <div class="progress-fill battery" style="width: ${batteryPercent}%"></div>
                 </div>
               </div>
+              ` : ''}
             </div>
           </div>
 
@@ -1256,8 +1488,8 @@ class KiaVehicleCard extends HTMLElement {
                 <span class="direction-label">${this.getCardinalDirection(data.heading)}</span>
               </div>
               ` : ''}
-              ${data.weatherType !== '—' ? `
-              <div class="weather-badge" title="${data.weatherType}">
+              ${data.weatherType !== null ? `
+              <div class="weather-badge" title="${escapeHtml(data.weatherType)}">
                 <ha-icon icon="mdi:${this.getWeatherIcon(data.weatherType)}"></ha-icon>
               </div>
               ` : ''}
@@ -1266,34 +1498,56 @@ class KiaVehicleCard extends HTMLElement {
             <!-- Vehicle Info Section -->
             <div class="vehicle-info">
               <!-- Odometer -->
+              ${data.odometer !== null ? `
               <div class="info-chip">
                 <ha-icon icon="mdi:counter"></ha-icon>
                 <span>${this.formatNumber(data.odometer)} mi</span>
               </div>
+              ` : ''}
 
               <!-- Next Service with enhanced visual -->
               ${this.renderServiceChip(data.nextService)}
 
               <!-- Speed (when driving) -->
-              ${data.vehicleStatus === 'Driving' && data.speed !== '—' && parseFloat(data.speed) > 0 ? `
+              ${data.vehicleStatus === 'Driving' && data.speed !== null && parseFloat(data.speed) > 0 ? `
               <div class="info-chip highlight">
                 <ha-icon icon="mdi:speedometer"></ha-icon>
-                <span>${this.formatNumber(data.speed)} ${data.speedUnit}</span>
+                <span>${this.formatNumber(data.speed)} ${escapeHtml(data.speedUnit)}</span>
               </div>
               ` : ''}
 
               <!-- Doors Status -->
+              ${hasDoors ? `
               <div class="info-chip ${anyDoorOpen ? 'warning' : 'success'}">
                 <ha-icon icon="mdi:${anyDoorOpen ? 'car-door' : 'car-door-lock'}"></ha-icon>
                 <span>${anyDoorOpen ? `${openDoors} Open` : 'All Closed'}</span>
               </div>
-              
+              ` : ''}
+
               <!-- Windows Status -->
+              ${hasWindows ? `
               <div class="info-chip ${anyWindowOpen ? 'warning' : 'success'}">
                 <ha-icon icon="mdi:${anyWindowOpen ? 'window-open-variant' : 'window-closed-variant'}"></ha-icon>
                 <span>${anyWindowOpen ? `${openWindows} Open` : 'All Closed'}</span>
               </div>
-              
+              ` : ''}
+
+              <!-- Outside temperature -->
+              ${data.weatherTemp !== null ? `
+              <div class="info-chip" title="Outside Temperature">
+                <ha-icon icon="mdi:thermometer"></ha-icon>
+                <span>${escapeHtml(data.weatherTemp)}</span>
+              </div>
+              ` : ''}
+
+              <!-- Climate set temperature -->
+              ${data.setTemp !== null ? `
+              <div class="info-chip" title="Set Temperature">
+                <ha-icon icon="mdi:thermostat"></ha-icon>
+                <span>${escapeHtml(data.setTemp)}</span>
+              </div>
+              ` : ''}
+
               <!-- Warnings row - show any active alerts -->
               ${data.washerFluidWarning ? `
               <div class="info-chip warning full-width">
@@ -1341,6 +1595,30 @@ class KiaVehicleCard extends HTMLElement {
               <div class="info-chip warning full-width">
                 <ha-icon icon="mdi:car-light-alert"></ha-icon>
                 <span>Right Low Beam Fault</span>
+              </div>
+              ` : ''}
+              ${data.headlampLeftHighFault ? `
+              <div class="info-chip warning full-width">
+                <ha-icon icon="mdi:car-light-alert"></ha-icon>
+                <span>Left High Beam Fault</span>
+              </div>
+              ` : ''}
+              ${data.headlampRightHighFault ? `
+              <div class="info-chip warning full-width">
+                <ha-icon icon="mdi:car-light-alert"></ha-icon>
+                <span>Right High Beam Fault</span>
+              </div>
+              ` : ''}
+              ${data.headlampLeftBifuncFault ? `
+              <div class="info-chip warning full-width">
+                <ha-icon icon="mdi:car-light-alert"></ha-icon>
+                <span>Left Bi-Function Headlamp Fault</span>
+              </div>
+              ` : ''}
+              ${data.headlampRightBifuncFault ? `
+              <div class="info-chip warning full-width">
+                <ha-icon icon="mdi:car-light-alert"></ha-icon>
+                <span>Right Bi-Function Headlamp Fault</span>
               </div>
               ` : ''}
               ${data.stopLampLeftFault ? `
@@ -1402,7 +1680,7 @@ class KiaVehicleCard extends HTMLElement {
               <!-- EV Battery (for EVs) -->
               <div class="info-chip ${data.evCharging ? 'highlight animate-charging' : ''} full-width">
                 <ha-icon icon="mdi:${data.evCharging ? 'battery-charging' : 'battery'}"></ha-icon>
-                <span>EV: ${data.evBattery}% ${data.evCharging ? '⚡ Charging' : ''} ${data.evPluggedIn && !data.evCharging ? '🔌 Plugged In' : ''}</span>
+                <span>EV: ${data.evBattery}%${data.evRange !== null ? ` · ${escapeHtml(data.evRange)}` : ''} ${data.evCharging ? '⚡ Charging' : ''} ${data.evPluggedIn && !data.evCharging ? '🔌 Plugged In' : ''}</span>
               </div>
               ` : ''}
             </div>
@@ -1410,31 +1688,39 @@ class KiaVehicleCard extends HTMLElement {
         </div>
 
         <!-- Controls Row (4 buttons like v2.0) -->
-        ${this._config.show_controls ? `
+        ${this._config.show_controls && controlCount > 0 ? `
         <div class="controls-section">
-          <div class="controls-grid">
+          <div class="controls-grid" style="grid-template-columns: repeat(${controlCount}, 1fr);">
+            ${canLock ? `
             <div class="control-btn ${data.locked ? '' : 'active'}" id="btn-lock">
               <ha-icon icon="mdi:${data.locked ? 'lock-open' : 'lock'}"></ha-icon>
               <span class="control-label">${data.locked ? 'Unlock' : 'Lock'}</span>
             </div>
-            <div class="control-btn ${data.engine ? 'climate-stop' : 'climate-start'}" id="btn-climate">
-              <ha-icon icon="mdi:${data.engine ? 'stop-circle-outline' : 'power'}"></ha-icon>
-              <span class="control-label">${data.engine ? 'Climate Stop' : 'Climate Start'}</span>
+            ` : ''}
+            ${canClimate ? `
+            <div class="control-btn ${engineRunning ? 'climate-stop' : 'climate-start'}" id="btn-climate">
+              <ha-icon icon="mdi:${engineRunning ? 'stop-circle-outline' : 'power'}"></ha-icon>
+              <span class="control-label">${engineRunning ? 'Climate Stop' : 'Climate Start'}</span>
             </div>
+            ` : ''}
+            ${canQuickActions ? `
             <div class="control-btn ${this._showQuickActions ? 'active' : ''}" id="btn-more">
               <ha-icon icon="mdi:dots-horizontal"></ha-icon>
               <span class="control-label">More</span>
             </div>
+            ` : ''}
+            ${canUpdate ? `
             <div class="control-btn" id="btn-refresh">
               <ha-icon icon="mdi:refresh"></ha-icon>
               <span class="control-label">Update</span>
             </div>
+            ` : ''}
           </div>
         </div>
         ` : ''}
 
         <!-- Quick Actions Menu (shown when More button is clicked) -->
-        ${this._showQuickActions ? `
+        ${this._showQuickActions && canQuickActions ? `
         <div class="quick-actions-menu">
           <div class="quick-actions-grid">
             <div class="quick-action-btn" id="qa-find-car">
@@ -1494,6 +1780,7 @@ class KiaVehicleCard extends HTMLElement {
         ${this._config.show_status_row !== false ? `
         <div class="status-rows">
           <!-- Vehicle Status - no arrow, just status -->
+          ${data.vehicleStatus !== null ? `
           <div class="status-row">
             <div class="status-row-left">
               <ha-icon icon="mdi:car"></ha-icon>
@@ -1501,11 +1788,13 @@ class KiaVehicleCard extends HTMLElement {
             </div>
             <div class="status-row-right ${data.vehicleStatus === 'Driving' ? 'driving' : 'parked'}">
               <ha-icon icon="mdi:${data.vehicleStatus === 'Driving' ? 'steering' : 'parking'}"></ha-icon>
-              <span>${data.vehicleStatus}</span>
+              <span>${escapeHtml(data.vehicleStatus)}</span>
             </div>
           </div>
-          
+          ` : ''}
+
           <!-- Vehicle Health - expandable when issues -->
+          ${data.dtcCount !== null ? `
           <div class="status-row ${hasHealthIssue ? 'clickable' : ''}" id="health-row">
             <div class="status-row-left">
               <ha-icon icon="mdi:car-wrench"></ha-icon>
@@ -1513,69 +1802,57 @@ class KiaVehicleCard extends HTMLElement {
             </div>
             <div class="status-row-right ${hasHealthIssue ? 'warning' : ''}">
               ${hasHealthIssue
-          ? `<span>${data.dtcCount} Issue${parseInt(data.dtcCount) > 1 ? 's' : ''}</span>
+          ? `<span>${escapeHtml(data.dtcCount)} Issue${parseInt(data.dtcCount) > 1 ? 's' : ''}</span>
                    <ha-icon icon="mdi:chevron-${this._showHealthDetails ? 'up' : 'down'}"></ha-icon>`
           : `<ha-icon icon="mdi:check-circle" style="color: var(--success)"></ha-icon>
                    <span style="color: var(--success)">All Good</span>`
         }
             </div>
           </div>
+          ` : ''}
           ${this._showHealthDetails && hasHealthIssue ? `
           <div class="health-details">
             <div class="health-details-item">
               <ha-icon icon="mdi:alert-circle"></ha-icon>
-              <span>${data.dtcCount} Diagnostic Trouble Code(s) detected. Check your vehicle or visit a dealer.</span>
+              <span>${escapeHtml(data.dtcCount)} Diagnostic Trouble Code(s) detected. Check your vehicle or visit a dealer.</span>
             </div>
           </div>
           ` : ''}
-          
+
           <!-- Tire Pressure Status (Accordion) -->
+          ${hasTireStatus || tires.length ? `
           <div class="tire-pressure-row">
-            <div class="tire-pressure-header" id="tire-pressure-toggle">
+            <div class="tire-pressure-header" ${tires.length ? 'id="tire-pressure-toggle"' : ''}>
               <div class="tire-pressure-title">
                 <ha-icon icon="mdi:car-tire-alert"></ha-icon>
                 <span>Tire Pressure</span>
               </div>
-              <div class="tire-pressure-status ${data.tirePressureWarning ? 'warning' : ''}">
-                ${data.tirePressureWarning
+              <div class="tire-pressure-status ${tireWarning ? 'warning' : ''}">
+                ${!hasTireStatus ? ''
+          : tireWarning
           ? `<ha-icon icon="mdi:alert-circle" style="color: var(--warning)"></ha-icon>
                      <span style="color: var(--warning)">Check Tires</span>`
           : `<ha-icon icon="mdi:check-circle" style="color: var(--success)"></ha-icon>
                      <span style="color: var(--success)">All OK</span>`
         }
-                <ha-icon icon="mdi:chevron-${this._showTirePressure ? 'up' : 'down'}" style="color: var(--text-secondary); margin-left: 4px;"></ha-icon>
+                ${tires.length ? `<ha-icon icon="mdi:chevron-${this._showTirePressure ? 'up' : 'down'}" style="color: var(--text-secondary); margin-left: 4px;"></ha-icon>` : ''}
               </div>
             </div>
-            ${this._showTirePressure ? `
+            ${this._showTirePressure && tires.length ? `
             <div class="tire-grid">
-              <div class="tire ${data.tireFrontLeft ? '' : 'warning'}">
-                <div class="tire-icon">
-                  <ha-icon icon="mdi:${data.tireFrontLeft ? 'check' : 'alert'}"></ha-icon>
+              ${tires.map((tire) => `
+              <div class="tire ${tire.warning ? 'warning' : ''}">
+                <div class="tire-icon ${tire.warning === null ? 'neutral' : ''}">
+                  <ha-icon icon="mdi:${tire.warning === null ? 'gauge' : tire.warning ? 'alert' : 'check'}"></ha-icon>
                 </div>
-                <span class="tire-label"><strong>Front</strong>Left</span>
+                <span class="tire-label"><strong>${tire.axle}</strong>${tire.side}${tire.pressure !== null ? `<br>${escapeHtml(tire.pressure)}` : ''}</span>
               </div>
-              <div class="tire ${data.tireFrontRight ? '' : 'warning'}">
-                <div class="tire-icon">
-                  <ha-icon icon="mdi:${data.tireFrontRight ? 'check' : 'alert'}"></ha-icon>
-                </div>
-                <span class="tire-label"><strong>Front</strong>Right</span>
-              </div>
-              <div class="tire ${data.tireRearLeft ? '' : 'warning'}">
-                <div class="tire-icon">
-                  <ha-icon icon="mdi:${data.tireRearLeft ? 'check' : 'alert'}"></ha-icon>
-                </div>
-                <span class="tire-label"><strong>Rear</strong>Left</span>
-              </div>
-              <div class="tire ${data.tireRearRight ? '' : 'warning'}">
-                <div class="tire-icon">
-                  <ha-icon icon="mdi:${data.tireRearRight ? 'check' : 'alert'}"></ha-icon>
-                </div>
-                <span class="tire-label"><strong>Rear</strong>Right</span>
-              </div>
+              `).join('')}
             </div>
             ` : ''}
           </div>
-          
+          ` : ''}
+
           <!-- Comfort Status Row - Only show when climate/defrost is actually running -->
           ${(() => {
             // Helper to check if seat is actually active (both level and type must be non-zero)
@@ -1616,7 +1893,25 @@ class KiaVehicleCard extends HTMLElement {
           ` : '';
           })()}
 
+          <!-- Diagnostics. Raw values: their meanings aren't documented by Kia. -->
+          ${[['mdi:car-battery', '12V Warning Level', data.carBatteryWarningLevel],
+             ['mdi:link-variant', 'Link Status', data.linkStatus],
+             ['mdi:tow-truck', 'Roadside Assistance', data.rsaStatus]]
+            .filter(([, , value]) => value !== null)
+            .map(([icon, label, value]) => `
+          <div class="status-row">
+            <div class="status-row-left">
+              <ha-icon icon="${icon}"></ha-icon>
+              <span>${label}</span>
+            </div>
+            <div class="status-row-right">
+              <span>${escapeHtml(value)}</span>
+            </div>
+          </div>
+          `).join('')}
+
           <!-- Valet Mode - toggle switch -->
+          ${data.valetMode !== null ? `
           <div class="status-row">
             <div class="status-row-left">
               <ha-icon icon="mdi:shield-car"></ha-icon>
@@ -1629,21 +1924,26 @@ class KiaVehicleCard extends HTMLElement {
               <div class="toggle-switch ${data.valetMode ? 'active' : ''}" id="valet-toggle"></div>
             </div>
           </div>
+          ` : ''}
         </div>
         ` : ''}
 
         <!-- Footer with clickable location -->
         <div class="footer">
+          ${this.formatTime(data.lastUpdated) ? `
           <div class="footer-item">
             <ha-icon icon="mdi:clock-outline"></ha-icon>
-            <span>Updated ${this.formatTime(data.lastUpdated)}</span>
+            <span>Updated ${escapeHtml(this.formatTime(data.lastUpdated))}</span>
           </div>
-          <div class="footer-item ${data.latitude && data.longitude ? 'clickable' : ''}" id="location-link" 
-               ${data.latitude && data.longitude ? `data-lat="${data.latitude}" data-lon="${data.longitude}"` : ''}>
+          ` : ''}
+          ${data.location !== null || (data.latitude && data.longitude) ? `
+          <div class="footer-item ${data.latitude && data.longitude ? 'clickable' : ''}" id="location-link"
+               ${data.latitude && data.longitude ? `data-lat="${escapeHtml(data.latitude)}" data-lon="${escapeHtml(data.longitude)}"` : ''}>
             <ha-icon icon="mdi:map-marker"></ha-icon>
-            <span>${data.location}</span>
+            <span>${escapeHtml(data.location ?? 'View on map')}</span>
             ${data.latitude && data.longitude ? '<ha-icon icon="mdi:open-in-new" style="--mdc-icon-size: 14px; margin-left: 4px;"></ha-icon>' : ''}
           </div>
+          ` : ''}
         </div>
       </ha-card>
     `;
@@ -1651,26 +1951,16 @@ class KiaVehicleCard extends HTMLElement {
     this.addEventListeners();
   }
 
-  getVehicleStatus(vid) {
-    // Try multiple possible entity names for vehicle status
-    const possibleEntities = [
-      `sensor.${vid}_vehicle_status`,
-      `binary_sensor.${vid}_engine`,
-      `sensor.${vid}_driving_status`,
-    ];
-
+  getVehicleStatus() {
     // Check engine first - if running, likely driving
-    const engineOn = this.getState(`binary_sensor.${vid}_engine`) === 'on';
-    if (engineOn) return 'Driving';
+    const engine = this.boolOf('engine');
+    if (engine) return 'Driving';
 
     // Check for explicit status sensor
-    const statusSensor = this.getState(`sensor.${vid}_vehicle_status`);
-    if (statusSensor && statusSensor !== 'unavailable') {
-      return statusSensor;
-    }
+    const status = this.stateOf('vehicleStatus') ?? this.stateOf('drivingStatus');
+    if (status) return status;
 
-    // Default to Parked
-    return 'Parked';
+    return engine === false ? 'Parked' : null;
   }
 
   renderServiceChip(nextServiceMiles) {
@@ -1678,24 +1968,8 @@ class KiaVehicleCard extends HTMLElement {
     // Assumes 8000 mile service intervals (common for Kia/Hyundai)
     const SERVICE_INTERVAL = 8000;
 
-    if (nextServiceMiles === '—' || !nextServiceMiles) {
-      return `
-        <div class="info-chip">
-          <ha-icon icon="mdi:car-wrench"></ha-icon>
-          <span>—</span>
-        </div>
-      `;
-    }
-
     const milesRemaining = parseFloat(nextServiceMiles);
-    if (isNaN(milesRemaining)) {
-      return `
-        <div class="info-chip">
-          <ha-icon icon="mdi:car-wrench"></ha-icon>
-          <span>—</span>
-        </div>
-      `;
-    }
+    if (isNaN(milesRemaining)) return '';
 
     // Determine color class based on miles remaining
     let colorClass = 'success'; // Green: >3000 mi
@@ -1738,11 +2012,13 @@ class KiaVehicleCard extends HTMLElement {
   }
 
   getCarSvg(data) {
-    const lockColor = data.locked ? '#10B981' : '#EF4444';
-    const doorFL = data.frontLeftDoor ? '#F59E0B' : '#10B981';
-    const doorFR = data.frontRightDoor ? '#F59E0B' : '#10B981';
-    const doorBL = data.backLeftDoor ? '#F59E0B' : '#10B981';
-    const doorBR = data.backRightDoor ? '#F59E0B' : '#10B981';
+    // Grey means unknown: only colour what we actually have data for
+    const color = (value, yes, no) => (value === null ? '#6b7280' : value ? yes : no);
+    const lockColor = color(data.locked, '#10B981', '#EF4444');
+    const doorFL = color(data.frontLeftDoor, '#F59E0B', '#10B981');
+    const doorFR = color(data.frontRightDoor, '#F59E0B', '#10B981');
+    const doorBL = color(data.backLeftDoor, '#F59E0B', '#10B981');
+    const doorBR = color(data.backRightDoor, '#F59E0B', '#10B981');
 
     return `
       <svg viewBox="0 0 120 200" class="car-svg">
@@ -1808,15 +2084,16 @@ class KiaVehicleCard extends HTMLElement {
       'clear_night': 'weather-night',
     };
 
-    if (!weatherType || weatherType === '—') return 'thermometer';
+    if (!weatherType) return 'thermometer';
     const normalizedType = weatherType.toLowerCase().replace(/[- ]/g, '_');
     return weatherIcons[normalizedType] || 'weather-partly-cloudy';
   }
 
   formatTime(dateStr) {
-    if (!dateStr || dateStr === 'unavailable' || dateStr === '—') return 'Unknown';
+    if (!dateStr) return null;
     try {
       const date = new Date(dateStr);
+      if (isNaN(date)) return null;
       const now = new Date();
       const diffMs = now - date;
       const diffMins = Math.floor(diffMs / 60000);
@@ -1831,26 +2108,22 @@ class KiaVehicleCard extends HTMLElement {
   }
 
   addEventListeners() {
-    const vid = this._config.vehicle_id;
-
     // Lock toggle button
     this.shadowRoot.getElementById('btn-lock')?.addEventListener('click', () => {
-      const lockEntity = `lock.${vid}_door_lock`;
-      const isLocked = this.getState(lockEntity) === 'locked';
+      const lockEntity = this.entityId('lock');
+      const isLocked = this.stateOf('lock') === 'locked';
       this.callService('lock', isLocked ? 'unlock' : 'lock', { entity_id: lockEntity });
     });
 
     // Climate toggle button - opens panel when off, stops climate when on
     this.shadowRoot.getElementById('btn-climate')?.addEventListener('click', () => {
-      const engineOn = this.getState(`binary_sensor.${vid}_engine`) === 'on';
-
-      if (engineOn) {
+      if (this.boolOf('engine')) {
         // Stop climate
-        if (!this._config.device_id) {
-          this.showNotification('Please configure device_id');
+        if (!this.deviceId) {
+          this.showNotification('Please select your vehicle in the card editor');
           return;
         }
-        this.callService('kia_uvo', 'stop_climate', { device_id: this._config.device_id });
+        this.callService('kia_uvo', 'stop_climate', { device_id: this.deviceId });
       } else {
         // Open climate panel
         this._showClimatePanel = !this._showClimatePanel;
@@ -1866,44 +2139,44 @@ class KiaVehicleCard extends HTMLElement {
 
     // Quick Actions - Find My Car (hazard lights + horn)
     this.shadowRoot.getElementById('qa-find-car')?.addEventListener('click', () => {
-      if (!this._config.device_id) {
-        this.showNotification('Please configure device_id');
+      if (!this.deviceId) {
+        this.showNotification('Please select your vehicle in the card editor');
         return;
       }
-      this.callService('kia_uvo', 'start_hazard_lights_and_horn', { device_id: this._config.device_id });
+      this.callService('kia_uvo', 'start_hazard_lights_and_horn', { device_id: this.deviceId });
       this._showQuickActions = false;
       this.render();
     });
 
     // Quick Actions - Horn only
     this.shadowRoot.getElementById('qa-horn')?.addEventListener('click', () => {
-      if (!this._config.device_id) {
-        this.showNotification('Please configure device_id');
+      if (!this.deviceId) {
+        this.showNotification('Please select your vehicle in the card editor');
         return;
       }
-      this.callService('kia_uvo', 'start_hazard_lights_and_horn', { device_id: this._config.device_id });
+      this.callService('kia_uvo', 'start_hazard_lights_and_horn', { device_id: this.deviceId });
       this._showQuickActions = false;
       this.render();
     });
 
     // Quick Actions - Flash Lights
     this.shadowRoot.getElementById('qa-lights')?.addEventListener('click', () => {
-      if (!this._config.device_id) {
-        this.showNotification('Please configure device_id');
+      if (!this.deviceId) {
+        this.showNotification('Please select your vehicle in the card editor');
         return;
       }
-      this.callService('kia_uvo', 'start_hazard_lights_and_horn', { device_id: this._config.device_id });
+      this.callService('kia_uvo', 'start_hazard_lights_and_horn', { device_id: this.deviceId });
       this._showQuickActions = false;
       this.render();
     });
 
     // Refresh button
     this.shadowRoot.getElementById('btn-refresh')?.addEventListener('click', () => {
-      if (!this._config.device_id) {
-        this.showNotification('Please configure device_id');
+      if (!this.deviceId) {
+        this.showNotification('Please select your vehicle in the card editor');
         return;
       }
-      this.callService('kia_uvo', 'force_update', { device_id: this._config.device_id });
+      this.callService('kia_uvo', 'force_update', { device_id: this.deviceId });
     });
 
     // Climate presets
@@ -1924,8 +2197,8 @@ class KiaVehicleCard extends HTMLElement {
 
     // Start Climate button (in panel)
     this.shadowRoot.getElementById('btn-start-climate')?.addEventListener('click', () => {
-      if (!this._config.device_id) {
-        this.showNotification('Please configure device_id');
+      if (!this.deviceId) {
+        this.showNotification('Please select your vehicle in the card editor');
         return;
       }
       if (!this._climateMode) return;
@@ -1937,7 +2210,7 @@ class KiaVehicleCard extends HTMLElement {
       };
 
       const climateData = {
-        device_id: this._config.device_id,
+        device_id: this.deviceId,
         climate: true,
         temperature: temps[this._climateMode],  // Note: service uses 'temperature' not 'set_temp'
         duration: this._config.duration,
@@ -1972,7 +2245,7 @@ class KiaVehicleCard extends HTMLElement {
 
     // Health row toggle (expandable when there are issues)
     this.shadowRoot.getElementById('health-row')?.addEventListener('click', () => {
-      const dtcCount = parseInt(this.getState(`sensor.${vid}_dtc_count`)) || 0;
+      const dtcCount = parseInt(this.stateOf('dtcCount')) || 0;
       if (dtcCount > 0) {
         this._showHealthDetails = !this._showHealthDetails;
         this.render();
@@ -2019,10 +2292,11 @@ class KiaVehicleCard extends HTMLElement {
     return document.createElement('kia-vehicle-card-editor');
   }
 
-  static getStubConfig() {
+  static getStubConfig(hass) {
+    const vehicle = findVehicleDevices(hass)[0];
     return {
-      vehicle_id: 'kikia',
-      name: 'My Kia',
+      device_id: vehicle?.id ?? '',
+      name: vehicle?.name ?? 'My Kia',
       theme: 'dark',
       show_controls: true,
       show_status_row: true,
@@ -2042,12 +2316,51 @@ class KiaVehicleCardEditor extends HTMLElement {
   }
 
   setConfig(config) {
-    this._config = config || {};
+    const next = config || {};
+    const changed = JSON.stringify(next) !== JSON.stringify(this._config);
+    this._config = next;
+    // Home Assistant echoes our own edits back here, and rebuilding the form
+    // would drop focus from the field being typed in
+    if (changed && this._hass) this.render();
   }
 
   set hass(hass) {
     this._hass = hass;
-    this.render();
+    // hass changes constantly, so rebuild only when the vehicle list does
+    const vehicles = JSON.stringify(findVehicleDevices(hass));
+    if (vehicles !== this._vehicles) {
+      this._vehicles = vehicles;
+      this.render();
+    }
+  }
+
+  renderVehiclePicker() {
+    const vehicles = findVehicleDevices(this._hass);
+    const current = this._config.device_id || '';
+    if (!vehicles.length) {
+      return `
+        <div class="editor-row">
+          <label>Device ID (required for controls)</label>
+          <input type="text" id="device_id" value="${escapeHtml(current)}" placeholder="abc123...">
+          <small>Developer Tools → Actions → ${INTEGRATION_DOMAIN} → Device dropdown</small>
+        </div>
+      `;
+    }
+    // Keep a saved device visible even if it's no longer found
+    const options = current && !vehicles.some((vehicle) => vehicle.id === current)
+      ? [...vehicles, { id: current, name: `${current} (not found)` }]
+      : vehicles;
+    return `
+      <div class="editor-row">
+        <label>Vehicle *</label>
+        <select id="device_id">
+          <option value="" ${current ? '' : 'selected'}>Select a vehicle...</option>
+          ${options.map((vehicle) => `
+          <option value="${escapeHtml(vehicle.id)}" ${vehicle.id === current ? 'selected' : ''}>${escapeHtml(vehicle.name)}</option>
+          `).join('')}
+        </select>
+      </div>
+    `;
   }
 
   render() {
@@ -2066,23 +2379,19 @@ class KiaVehicleCardEditor extends HTMLElement {
         .editor-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
       </style>
       <div class="editor">
+        ${this.renderVehiclePicker()}
         <div class="editor-row">
-          <label>Vehicle ID *</label>
-          <input type="text" id="vehicle_id" value="${this._config.vehicle_id || ''}" placeholder="kikia">
-          <small>Entity prefix (e.g., "kikia" from sensor.kikia_fuel_level)</small>
+          <label>Entity Prefix (optional)</label>
+          <input type="text" id="vehicle_id" value="${escapeHtml(this._config.vehicle_id)}" placeholder="my_car">
+          <small>Only needed if your vehicle isn't found automatically, e.g. "my_car" from sensor.my_car_fuel_level</small>
         </div>
         <div class="editor-row">
           <label>Display Name</label>
-          <input type="text" id="name" value="${this._config.name || 'My Kia'}">
-        </div>
-        <div class="editor-row">
-          <label>Device ID (required for controls)</label>
-          <input type="text" id="device_id" value="${this._config.device_id || ''}" placeholder="abc123...">
-          <small>Developer Tools → Services → kia_uvo → Device dropdown</small>
+          <input type="text" id="name" value="${escapeHtml(this._config.name || 'My Kia')}">
         </div>
         <div class="editor-row">
           <label>Vehicle Image URL</label>
-          <input type="text" id="image" value="${this._config.image || ''}" placeholder="https://owners.kia.com/...">
+          <input type="text" id="image" value="${escapeHtml(this._config.image)}" placeholder="https://owners.kia.com/...">
         </div>
 
         <div class="editor-section">Climate Presets</div>

@@ -1,0 +1,1096 @@
+{
+"upstream": [
+{
+"domain": "sensor",
+"suffix": "total_driving_range",
+"translation_key": "total_driving_range"
+},
+{
+"domain": "sensor",
+"suffix": "odometer",
+"translation_key": "odometer"
+},
+{
+"domain": "sensor",
+"suffix": "last_service",
+"translation_key": "last_service_distance"
+},
+{
+"domain": "sensor",
+"suffix": "next_service",
+"translation_key": "next_service_distance"
+},
+{
+"domain": "sensor",
+"suffix": "car_battery_level",
+"translation_key": "car_battery_percentage"
+},
+{
+"domain": "sensor",
+"suffix": "last_updated_at",
+"translation_key": "last_updated_at"
+},
+{
+"domain": "sensor",
+"suffix": "last_scanned_at",
+"translation_key": "last_scanned_at"
+},
+{
+"domain": "sensor",
+"suffix": "ev_battery_level",
+"translation_key": "ev_battery_percentage"
+},
+{
+"domain": "sensor",
+"suffix": "ev_state_of_health_battery",
+"translation_key": "ev_battery_soh_percentage"
+},
+{
+"domain": "sensor",
+"suffix": "ev_battery_remaining_energy",
+"translation_key": "ev_battery_remain"
+},
+{
+"domain": "sensor",
+"suffix": "ev_battery_capacity",
+"translation_key": "ev_battery_capacity"
+},
+{
+"domain": "sensor",
+"suffix": "ev_range",
+"translation_key": "ev_driving_range"
+},
+{
+"domain": "sensor",
+"suffix": "fuel_driving_range",
+"translation_key": "fuel_driving_range"
+},
+{
+"domain": "sensor",
+"suffix": "fuel_level",
+"translation_key": "fuel_level"
+},
+{
+"domain": "sensor",
+"suffix": "set_temperature",
+"translation_key": "air_temperature"
+},
+{
+"domain": "sensor",
+"suffix": "estimated_charge_duration",
+"translation_key": "ev_estimated_current_charge_duration"
+},
+{
+"domain": "sensor",
+"suffix": "estimated_fast_charge_duration",
+"translation_key": "ev_estimated_fast_charge_duration"
+},
+{
+"domain": "sensor",
+"suffix": "estimated_portable_charge_duration",
+"translation_key": "ev_estimated_portable_charge_duration"
+},
+{
+"domain": "sensor",
+"suffix": "estimated_station_charge_duration",
+"translation_key": "ev_estimated_station_charge_duration"
+},
+{
+"domain": "sensor",
+"suffix": "target_range_of_charge_ac",
+"translation_key": "ev_target_range_charge_ac"
+},
+{
+"domain": "sensor",
+"suffix": "target_range_of_charge_dc",
+"translation_key": "ev_target_range_charge_dc"
+},
+{
+"domain": "sensor",
+"suffix": "90_day_energy_consumption",
+"translation_key": "total_power_consumed"
+},
+{
+"domain": "sensor",
+"suffix": "90_day_energy_regeneration",
+"translation_key": "total_power_regenerated"
+},
+{
+"domain": "sensor",
+"suffix": "30_day_average_energy_consumption",
+"translation_key": "power_consumption_30d"
+},
+{
+"domain": "sensor",
+"suffix": "front_left_seat",
+"translation_key": "front_left_seat_status"
+},
+{
+"domain": "sensor",
+"suffix": "front_right_seat",
+"translation_key": "front_right_seat_status"
+},
+{
+"domain": "sensor",
+"suffix": "rear_left_seat",
+"translation_key": "rear_left_seat_status"
+},
+{
+"domain": "sensor",
+"suffix": "rear_right_seat",
+"translation_key": "rear_right_seat_status"
+},
+{
+"domain": "sensor",
+"suffix": "geocoded_location",
+"translation_key": "geocode_name"
+},
+{
+"domain": "sensor",
+"suffix": "dtc_count",
+"translation_key": "dtc_count"
+},
+{
+"domain": "sensor",
+"suffix": "first_departure_time",
+"translation_key": "ev_first_departure_time"
+},
+{
+"domain": "sensor",
+"suffix": "second_departure_time",
+"translation_key": "ev_second_departure_time"
+},
+{
+"domain": "sensor",
+"suffix": "ev_off_peak_start_time",
+"translation_key": "ev_off_peak_start_time"
+},
+{
+"domain": "sensor",
+"suffix": "ev_off_peak_end_time",
+"translation_key": "ev_off_peak_end_time"
+},
+{
+"domain": "sensor",
+"suffix": "charge_complete_alarm",
+"translation_key": "ev_charge_complete_alarm"
+},
+{
+"domain": "sensor",
+"suffix": "ev_charging_current_limit",
+"translation_key": "ev_charging_current"
+},
+{
+"domain": "sensor",
+"suffix": "ev_charging_power",
+"translation_key": "ev_charging_power"
+},
+{
+"domain": "sensor",
+"suffix": "vehicle_identification_number",
+"translation_key": "vehicle_identification_number"
+},
+{
+"domain": "sensor",
+"suffix": "outside_temperature",
+"translation_key": "outside_temperature"
+},
+{
+"domain": "sensor",
+"suffix": "first_departure_days",
+"translation_key": "ev_first_departure_days"
+},
+{
+"domain": "sensor",
+"suffix": "second_departure_days",
+"translation_key": "ev_second_departure_days"
+},
+{
+"domain": "sensor",
+"suffix": "first_departure_climate_temperature",
+"translation_key": "ev_first_departure_climate_temperature"
+},
+{
+"domain": "sensor",
+"suffix": "second_departure_climate_temperature",
+"translation_key": "ev_second_departure_climate_temperature"
+},
+{
+"domain": "sensor",
+"suffix": "ev_battery_pack_voltage",
+"translation_key": "ev_battery_pack_voltage"
+},
+{
+"domain": "sensor",
+"suffix": "ev_battery_temperature_min",
+"translation_key": "ev_battery_temperature_min"
+},
+{
+"domain": "sensor",
+"suffix": "ev_battery_temperature_max",
+"translation_key": "ev_battery_temperature_max"
+},
+{
+"domain": "sensor",
+"suffix": "ev_battery_water_temperature",
+"translation_key": "ev_battery_water_temperature"
+},
+{
+"domain": "sensor",
+"suffix": "ev_power_consumption_air_conditioning",
+"translation_key": "ev_power_consumption_air_conditioning"
+},
+{
+"domain": "sensor",
+"suffix": "ev_power_consumption_battery_cooling",
+"translation_key": "ev_power_consumption_battery_cooling"
+},
+{
+"domain": "sensor",
+"suffix": "ev_power_consumption_battery_heater",
+"translation_key": "ev_power_consumption_battery_heater"
+},
+{
+"domain": "sensor",
+"suffix": "location_last_updated",
+"translation_key": "location_last_updated_at"
+},
+{
+"domain": "sensor",
+"suffix": "tire_pressure_front_left",
+"translation_key": "tire_pressure_front_left"
+},
+{
+"domain": "sensor",
+"suffix": "tire_pressure_front_right",
+"translation_key": "tire_pressure_front_right"
+},
+{
+"domain": "sensor",
+"suffix": "tire_pressure_rear_left",
+"translation_key": "tire_pressure_rear_left"
+},
+{
+"domain": "sensor",
+"suffix": "tire_pressure_rear_right",
+"translation_key": "tire_pressure_rear_right"
+},
+{
+"domain": "sensor",
+"suffix": "drive_mode",
+"translation_key": "drive_mode"
+},
+{
+"domain": "sensor",
+"suffix": "gear_position",
+"translation_key": "gear_position"
+},
+{
+"domain": "sensor",
+"suffix": "steering_wheel_heat_step",
+"translation_key": "steering_wheel_heat_step"
+},
+{
+"domain": "sensor",
+"suffix": "v2l_discharge_remaining_time",
+"translation_key": "ev_v2l_discharge_remain_time"
+},
+{
+"domain": "sensor",
+"suffix": "v2l_discharge_dte",
+"translation_key": "ev_v2l_discharge_dte"
+},
+{
+"domain": "sensor",
+"suffix": "v2l_mode",
+"translation_key": "ev_v2l_mode"
+},
+{
+"domain": "sensor",
+"suffix": "average_fuel_economy_accumulated",
+"translation_key": "average_fuel_economy_accumulated"
+},
+{
+"domain": "sensor",
+"suffix": "average_fuel_economy_drive",
+"translation_key": "average_fuel_economy_drive"
+},
+{
+"domain": "sensor",
+"suffix": "average_fuel_economy_after_refuel",
+"translation_key": "average_fuel_economy_after_refuel"
+},
+{
+"domain": "binary_sensor",
+"suffix": "engine",
+"translation_key": "engine_is_running"
+},
+{
+"domain": "binary_sensor",
+"suffix": "defrost",
+"translation_key": "defrost_is_on"
+},
+{
+"domain": "binary_sensor",
+"suffix": "steering_wheel_heater",
+"translation_key": "steering_wheel_heater_is_on"
+},
+{
+"domain": "binary_sensor",
+"suffix": "back_window_heater",
+"translation_key": "back_window_heater_is_on"
+},
+{
+"domain": "binary_sensor",
+"suffix": "side_mirror_heater",
+"translation_key": "side_mirror_heater_is_on"
+},
+{
+"domain": "binary_sensor",
+"suffix": "front_left_door",
+"translation_key": "front_left_door_is_open"
+},
+{
+"domain": "binary_sensor",
+"suffix": "front_right_door",
+"translation_key": "front_right_door_is_open"
+},
+{
+"domain": "binary_sensor",
+"suffix": "back_left_door",
+"translation_key": "back_left_door_is_open"
+},
+{
+"domain": "binary_sensor",
+"suffix": "back_right_door",
+"translation_key": "back_right_door_is_open"
+},
+{
+"domain": "binary_sensor",
+"suffix": "trunk",
+"translation_key": "trunk_is_open"
+},
+{
+"domain": "binary_sensor",
+"suffix": "hood",
+"translation_key": "hood_is_open"
+},
+{
+"domain": "binary_sensor",
+"suffix": "front_left_window",
+"translation_key": "front_left_window_is_open"
+},
+{
+"domain": "binary_sensor",
+"suffix": "front_right_window",
+"translation_key": "front_right_window_is_open"
+},
+{
+"domain": "binary_sensor",
+"suffix": "back_left_window",
+"translation_key": "back_left_window_is_open"
+},
+{
+"domain": "binary_sensor",
+"suffix": "back_right_window",
+"translation_key": "back_right_window_is_open"
+},
+{
+"domain": "binary_sensor",
+"suffix": "ev_battery_charge",
+"translation_key": "ev_battery_is_charging"
+},
+{
+"domain": "binary_sensor",
+"suffix": "ev_battery_plug",
+"translation_key": "ev_battery_is_plugged_in"
+},
+{
+"domain": "binary_sensor",
+"suffix": "fuel_low_level",
+"translation_key": "fuel_level_is_low"
+},
+{
+"domain": "binary_sensor",
+"suffix": "smart_key_battery_warning",
+"translation_key": "smart_key_battery_warning_is_on"
+},
+{
+"domain": "binary_sensor",
+"suffix": "air_cleaning",
+"translation_key": "air_cleaning_is_on"
+},
+{
+"domain": "binary_sensor",
+"suffix": "auto_cut_battery_pre_warning",
+"translation_key": "auto_cut_battery_prewarning_on"
+},
+{
+"domain": "binary_sensor",
+"suffix": "hazard_lights",
+"translation_key": "hazard_lights_on"
+},
+{
+"domain": "binary_sensor",
+"suffix": "windshield_heater",
+"translation_key": "windshield_front_heater_is_on"
+},
+{
+"domain": "binary_sensor",
+"suffix": "washer_fluid_warning",
+"translation_key": "washer_fluid_warning_is_on"
+},
+{
+"domain": "binary_sensor",
+"suffix": "tire_pressure_all",
+"translation_key": "tire_pressure_all_warning_is_on"
+},
+{
+"domain": "binary_sensor",
+"suffix": "tire_pressure_rear_left",
+"translation_key": "tire_pressure_rear_left_warning_is_on"
+},
+{
+"domain": "binary_sensor",
+"suffix": "tire_pressure_front_left",
+"translation_key": "tire_pressure_front_left_warning_is_on"
+},
+{
+"domain": "binary_sensor",
+"suffix": "tire_pressure_front_right",
+"translation_key": "tire_pressure_front_right_warning_is_on"
+},
+{
+"domain": "binary_sensor",
+"suffix": "tire_pressure_rear_right",
+"translation_key": "tire_pressure_rear_right_warning_is_on"
+},
+{
+"domain": "binary_sensor",
+"suffix": "air_conditioner",
+"translation_key": "air_control_is_on"
+},
+{
+"domain": "binary_sensor",
+"suffix": "ev_charge_port",
+"translation_key": "ev_charge_port_door_is_open"
+},
+{
+"domain": "binary_sensor",
+"suffix": "brake_fluid_warning",
+"translation_key": "brake_fluid_warning_is_on"
+},
+{
+"domain": "binary_sensor",
+"suffix": "sunroof",
+"translation_key": "sunroof_is_open"
+},
+{
+"domain": "binary_sensor",
+"suffix": "accessory",
+"translation_key": "accessory_on"
+},
+{
+"domain": "binary_sensor",
+"suffix": "ign3",
+"translation_key": "ign3"
+},
+{
+"domain": "binary_sensor",
+"suffix": "remote_ignition",
+"translation_key": "remote_ignition"
+},
+{
+"domain": "binary_sensor",
+"suffix": "transmission_condition",
+"translation_key": "transmission_condition"
+},
+{
+"domain": "binary_sensor",
+"suffix": "sleep_mode_check",
+"translation_key": "sleep_mode_check"
+},
+{
+"domain": "binary_sensor",
+"suffix": "headlamp_status",
+"translation_key": "headlamp_status"
+},
+{
+"domain": "binary_sensor",
+"suffix": "front_left_lamp_fault",
+"translation_key": "headlamp_left_low"
+},
+{
+"domain": "binary_sensor",
+"suffix": "front_right_lamp_fault",
+"translation_key": "headlamp_right_low"
+},
+{
+"domain": "binary_sensor",
+"suffix": "headlamp_left_high_fault",
+"translation_key": "headlamp_left_high"
+},
+{
+"domain": "binary_sensor",
+"suffix": "headlamp_right_high_fault",
+"translation_key": "headlamp_right_high"
+},
+{
+"domain": "binary_sensor",
+"suffix": "headlamp_left_bifunctional_fault",
+"translation_key": "headlamp_left_bifunc"
+},
+{
+"domain": "binary_sensor",
+"suffix": "headlamp_right_bifunctional_fault",
+"translation_key": "headlamp_right_bifunc"
+},
+{
+"domain": "binary_sensor",
+"suffix": "rear_left_lamp_fault",
+"translation_key": "stop_lamp_left"
+},
+{
+"domain": "binary_sensor",
+"suffix": "rear_right_lamp_fault",
+"translation_key": "stop_lamp_right"
+},
+{
+"domain": "binary_sensor",
+"suffix": "turn_signal_left_front",
+"translation_key": "turn_signal_left_front"
+},
+{
+"domain": "binary_sensor",
+"suffix": "turn_signal_right_front",
+"translation_key": "turn_signal_right_front"
+},
+{
+"domain": "binary_sensor",
+"suffix": "turn_signal_left_rear",
+"translation_key": "turn_signal_left_rear"
+},
+{
+"domain": "binary_sensor",
+"suffix": "turn_signal_right_rear",
+"translation_key": "turn_signal_right_rear"
+},
+{
+"domain": "binary_sensor",
+"suffix": "locked",
+"translation_key": "is_locked"
+},
+{
+"domain": "binary_sensor",
+"suffix": "front_left_seat_heater",
+"translation_key": "front_left_seat_heater_on"
+},
+{
+"domain": "binary_sensor",
+"suffix": "front_right_seat_heater",
+"translation_key": "front_right_seat_heater_on"
+},
+{
+"domain": "binary_sensor",
+"suffix": "rear_left_seat_heater",
+"translation_key": "rear_left_seat_heater_on"
+},
+{
+"domain": "binary_sensor",
+"suffix": "rear_right_seat_heater",
+"translation_key": "rear_right_seat_heater_on"
+},
+{
+"domain": "binary_sensor",
+"suffix": "front_left_door_lock",
+"translation_key": "front_left_door_is_locked"
+},
+{
+"domain": "binary_sensor",
+"suffix": "front_right_door_lock",
+"translation_key": "front_right_door_is_locked"
+},
+{
+"domain": "binary_sensor",
+"suffix": "back_left_door_lock",
+"translation_key": "back_left_door_is_locked"
+},
+{
+"domain": "binary_sensor",
+"suffix": "back_right_door_lock",
+"translation_key": "back_right_door_is_locked"
+},
+{
+"domain": "binary_sensor",
+"suffix": "ev_battery_winter_mode",
+"translation_key": "ev_battery_winter_mode"
+},
+{
+"domain": "binary_sensor",
+"suffix": "ev_battery_precondition",
+"translation_key": "ev_battery_precondition_enabled"
+},
+{
+"domain": "binary_sensor",
+"suffix": "ev_battery_heating",
+"translation_key": "ev_battery_heating_state"
+},
+{
+"domain": "binary_sensor",
+"suffix": "v2l_status",
+"translation_key": "ev_v2l_status"
+},
+{
+"domain": "binary_sensor",
+"suffix": "v2x_status",
+"translation_key": "ev_v2x_status"
+},
+{
+"domain": "binary_sensor",
+"suffix": "oil_level_warning",
+"translation_key": "oil_level_warning_is_on"
+},
+{
+"domain": "binary_sensor",
+"suffix": "12v_battery_fault",
+"translation_key": "battery_auxiliary_fail_warning_is_on"
+},
+{
+"domain": "sensor",
+"suffix": "data",
+"translation_key": "data"
+},
+{
+"domain": "lock",
+"suffix": "door_lock",
+"translation_key": "door_lock"
+},
+{
+"domain": "device_tracker",
+"suffix": "location",
+"translation_key": "location"
+}
+],
+"fork": [
+{
+"domain": "binary_sensor",
+"suffix": "accessory"
+},
+{
+"domain": "binary_sensor",
+"suffix": "air_conditioner"
+},
+{
+"domain": "binary_sensor",
+"suffix": "back_left_door"
+},
+{
+"domain": "binary_sensor",
+"suffix": "back_left_window"
+},
+{
+"domain": "binary_sensor",
+"suffix": "back_right_door"
+},
+{
+"domain": "binary_sensor",
+"suffix": "back_right_window"
+},
+{
+"domain": "binary_sensor",
+"suffix": "back_window_heater"
+},
+{
+"domain": "binary_sensor",
+"suffix": "brake_fluid_warning"
+},
+{
+"domain": "binary_sensor",
+"suffix": "defrost"
+},
+{
+"domain": "binary_sensor",
+"suffix": "engine"
+},
+{
+"domain": "binary_sensor",
+"suffix": "engine_oil_warning"
+},
+{
+"domain": "binary_sensor",
+"suffix": "ev_battery_charge"
+},
+{
+"domain": "binary_sensor",
+"suffix": "ev_battery_plug"
+},
+{
+"domain": "binary_sensor",
+"suffix": "ev_charge_port"
+},
+{
+"domain": "binary_sensor",
+"suffix": "ev_first_scheduled_departure"
+},
+{
+"domain": "binary_sensor",
+"suffix": "ev_second_scheduled_departure"
+},
+{
+"domain": "binary_sensor",
+"suffix": "finance_registered"
+},
+{
+"domain": "binary_sensor",
+"suffix": "front_left_door"
+},
+{
+"domain": "binary_sensor",
+"suffix": "front_left_seat_heater"
+},
+{
+"domain": "binary_sensor",
+"suffix": "front_left_window"
+},
+{
+"domain": "binary_sensor",
+"suffix": "front_right_door"
+},
+{
+"domain": "binary_sensor",
+"suffix": "front_right_seat_heater"
+},
+{
+"domain": "binary_sensor",
+"suffix": "front_right_window"
+},
+{
+"domain": "binary_sensor",
+"suffix": "fuel_low_level"
+},
+{
+"domain": "binary_sensor",
+"suffix": "hazard_lights"
+},
+{
+"domain": "binary_sensor",
+"suffix": "headlamp_left_low_fault"
+},
+{
+"domain": "binary_sensor",
+"suffix": "headlamp_right_low_fault"
+},
+{
+"domain": "binary_sensor",
+"suffix": "headlight_fault"
+},
+{
+"domain": "binary_sensor",
+"suffix": "hood"
+},
+{
+"domain": "binary_sensor",
+"suffix": "ign3"
+},
+{
+"domain": "binary_sensor",
+"suffix": "locked"
+},
+{
+"domain": "binary_sensor",
+"suffix": "rear_left_seat_heater"
+},
+{
+"domain": "binary_sensor",
+"suffix": "rear_right_seat_heater"
+},
+{
+"domain": "binary_sensor",
+"suffix": "remote_control_available"
+},
+{
+"domain": "binary_sensor",
+"suffix": "remote_ignition"
+},
+{
+"domain": "binary_sensor",
+"suffix": "side_mirror_heater"
+},
+{
+"domain": "binary_sensor",
+"suffix": "sleep_mode_check"
+},
+{
+"domain": "binary_sensor",
+"suffix": "smart_key_battery_warning"
+},
+{
+"domain": "binary_sensor",
+"suffix": "steering_wheel_heater"
+},
+{
+"domain": "binary_sensor",
+"suffix": "stop_lamp_fault"
+},
+{
+"domain": "binary_sensor",
+"suffix": "stop_lamp_left_fault"
+},
+{
+"domain": "binary_sensor",
+"suffix": "stop_lamp_right_fault"
+},
+{
+"domain": "binary_sensor",
+"suffix": "sunroof"
+},
+{
+"domain": "binary_sensor",
+"suffix": "tail_lamp_fault"
+},
+{
+"domain": "binary_sensor",
+"suffix": "tire_pressure_all"
+},
+{
+"domain": "binary_sensor",
+"suffix": "tire_pressure_front_left"
+},
+{
+"domain": "binary_sensor",
+"suffix": "tire_pressure_front_right"
+},
+{
+"domain": "binary_sensor",
+"suffix": "tire_pressure_rear_left"
+},
+{
+"domain": "binary_sensor",
+"suffix": "tire_pressure_rear_right"
+},
+{
+"domain": "binary_sensor",
+"suffix": "transmission_condition"
+},
+{
+"domain": "binary_sensor",
+"suffix": "trunk"
+},
+{
+"domain": "binary_sensor",
+"suffix": "turn_signal_left_front_fault"
+},
+{
+"domain": "binary_sensor",
+"suffix": "turn_signal_left_rear_fault"
+},
+{
+"domain": "binary_sensor",
+"suffix": "turn_signal_right_front_fault"
+},
+{
+"domain": "binary_sensor",
+"suffix": "turn_signal_right_rear_fault"
+},
+{
+"domain": "binary_sensor",
+"suffix": "valet_mode"
+},
+{
+"domain": "binary_sensor",
+"suffix": "washer_fluid_warning"
+},
+{
+"domain": "device_tracker",
+"suffix": "location"
+},
+{
+"domain": "lock",
+"suffix": "door_lock"
+},
+{
+"domain": "sensor",
+"suffix": "average_energy_consumption"
+},
+{
+"domain": "sensor",
+"suffix": "car_battery_level"
+},
+{
+"domain": "sensor",
+"suffix": "car_battery_warning_level"
+},
+{
+"domain": "sensor",
+"suffix": "data"
+},
+{
+"domain": "sensor",
+"suffix": "distance_to_empty"
+},
+{
+"domain": "sensor",
+"suffix": "dtc_count"
+},
+{
+"domain": "sensor",
+"suffix": "engine_runtime"
+},
+{
+"domain": "sensor",
+"suffix": "estimated_charge_duration"
+},
+{
+"domain": "sensor",
+"suffix": "estimated_fast_charge_duration"
+},
+{
+"domain": "sensor",
+"suffix": "estimated_portable_charge_duration"
+},
+{
+"domain": "sensor",
+"suffix": "estimated_station_charge_duration"
+},
+{
+"domain": "sensor",
+"suffix": "ev_battery_capacity"
+},
+{
+"domain": "sensor",
+"suffix": "ev_battery_level"
+},
+{
+"domain": "sensor",
+"suffix": "ev_charging_current_limit"
+},
+{
+"domain": "sensor",
+"suffix": "ev_charging_power"
+},
+{
+"domain": "sensor",
+"suffix": "ev_first_scheduled_departure_time"
+},
+{
+"domain": "sensor",
+"suffix": "ev_off_peak_end_time"
+},
+{
+"domain": "sensor",
+"suffix": "ev_off_peak_start_time"
+},
+{
+"domain": "sensor",
+"suffix": "ev_range"
+},
+{
+"domain": "sensor",
+"suffix": "ev_second_scheduled_departure_time"
+},
+{
+"domain": "sensor",
+"suffix": "ev_state_of_health_battery"
+},
+{
+"domain": "sensor",
+"suffix": "front_left_seat"
+},
+{
+"domain": "sensor",
+"suffix": "front_right_seat"
+},
+{
+"domain": "sensor",
+"suffix": "fuel_driving_range"
+},
+{
+"domain": "sensor",
+"suffix": "fuel_level"
+},
+{
+"domain": "sensor",
+"suffix": "geocoded_location"
+},
+{
+"domain": "sensor",
+"suffix": "heading"
+},
+{
+"domain": "sensor",
+"suffix": "last_service"
+},
+{
+"domain": "sensor",
+"suffix": "last_updated_at"
+},
+{
+"domain": "sensor",
+"suffix": "link_status"
+},
+{
+"domain": "sensor",
+"suffix": "next_service"
+},
+{
+"domain": "sensor",
+"suffix": "odometer"
+},
+{
+"domain": "sensor",
+"suffix": "outside_temperature"
+},
+{
+"domain": "sensor",
+"suffix": "rear_left_seat"
+},
+{
+"domain": "sensor",
+"suffix": "rear_right_seat"
+},
+{
+"domain": "sensor",
+"suffix": "roadside_assistance_status"
+},
+{
+"domain": "sensor",
+"suffix": "set_temperature"
+},
+{
+"domain": "sensor",
+"suffix": "speed"
+},
+{
+"domain": "sensor",
+"suffix": "target_range_of_charge_ac"
+},
+{
+"domain": "sensor",
+"suffix": "target_range_of_charge_dc"
+},
+{
+"domain": "sensor",
+"suffix": "total_driving_range"
+},
+{
+"domain": "sensor",
+"suffix": "total_energy_consumption"
+},
+{
+"domain": "sensor",
+"suffix": "total_energy_regeneration"
+},
+{
+"domain": "sensor",
+"suffix": "valet_mode"
+},
+{
+"domain": "sensor",
+"suffix": "vehicle_identification_number"
+},
+{
+"domain": "sensor",
+"suffix": "weather_type"
+}
+]
+}
