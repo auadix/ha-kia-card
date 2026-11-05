@@ -1,7 +1,7 @@
 /**
  * Kia Vehicle Card for Home Assistant
  * A modern, comprehensive card for Kia/Hyundai vehicles
- * Version: 2.13.0-beta.6
+ * Version: 2.13.0-beta.7
  *
  * Features:
  * - MDI icons (no emojis)
@@ -190,6 +190,22 @@ function findVehicleDevices(hass) {
     const device = hass?.devices?.[id];
     return { id, name: device?.name_by_user || device?.name || id };
   });
+}
+
+// Kia USA's vehicle data names a picture of the exact model, trim and colour
+// on Kia's owner site. Other regions don't send one.
+const KIA_IMAGE_HOST = 'https://owners.kia.com';
+
+function vehicleDataImage(vehicleData) {
+  const images = vehicleData?.vehicleConfig?.vehicleDetail?.images;
+  if (!Array.isArray(images)) return null;
+  const image = images.find((candidate) => Number(candidate?.imageType) === 1) ?? images[0];
+  const path = image?.imagePath;
+  const name = image?.imageName;
+  if (typeof path !== 'string' || typeof name !== 'string' || !name) return null;
+  if (path.startsWith('https://')) return `${path}${name}`;
+  if (!path.startsWith('/content/dam/kia/')) return null;
+  return `${KIA_IMAGE_HOST}${path}${name}`;
 }
 
 // start_climate takes the unit of the API's region, whatever the user's HA uses
@@ -689,11 +705,12 @@ class KiaVehicleCard extends HTMLElement {
     const canUpdate = this.hasService('force_update');
     const controlCount = [canLock, canClimate, canQuickActions, canUpdate].filter(Boolean).length;
 
-    // Image handling
-    let vehicleImage = this._config.image;
-    if (!vehicleImage) {
-      vehicleImage = this.attrOf('data', 'vehicle_image');
-    }
+    // Your own picture first, then the one Kia sends, then the drawn diagram.
+    // A picture that fails to load falls back to the diagram.
+    let vehicleImage = this._config.image
+      || this.attrOf('data', 'vehicle_image')
+      || vehicleDataImage(this.attrOf('data', 'vehicle_data'));
+    if (vehicleImage && vehicleImage === this._failedImage) vehicleImage = null;
 
     const vehicleImageHtml = vehicleImage
       ? `<img class="vehicle-image" src="${escapeHtml(vehicleImage)}" alt="Vehicle" />`
@@ -2356,6 +2373,12 @@ class KiaVehicleCard extends HTMLElement {
   }
 
   addEventListeners() {
+    const image = this.shadowRoot.querySelector('.vehicle-image');
+    image?.addEventListener('error', () => {
+      this._failedImage = image.getAttribute('src');
+      this.render();
+    }, { once: true });
+
     // Lock toggle button
     this.shadowRoot.getElementById('btn-lock')?.addEventListener('click', () => {
       const entity_id = this.entityId('lock');
@@ -2642,7 +2665,8 @@ class KiaVehicleCardEditor extends HTMLElement {
         </div>
         <div class="editor-row">
           <label>Vehicle Image URL</label>
-          <input type="text" id="image" value="${escapeHtml(this._config.image)}" placeholder="https://owners.kia.com/...">
+          <input type="text" id="image" value="${escapeHtml(this._config.image)}" placeholder="https://...">
+          <small>Optional. Without one, the card uses Kia's picture of your car when the integration provides it, or draws a diagram.</small>
         </div>
 
         <div class="editor-section">Climate Presets</div>
@@ -2789,4 +2813,4 @@ window.customCards.push({
   preview: true
 });
 
-console.info('%c KIA-VEHICLE-CARD %c v2.13.0-beta.6 ', 'background: #3B82F6; color: white; font-weight: bold; border-radius: 4px 0 0 4px;', 'background: #1f2937; color: white; border-radius: 0 4px 4px 0;');
+console.info('%c KIA-VEHICLE-CARD %c v2.13.0-beta.7 ', 'background: #3B82F6; color: white; font-weight: bold; border-radius: 4px 0 0 4px;', 'background: #1f2937; color: white; border-radius: 0 4px 4px 0;');

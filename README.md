@@ -14,7 +14,7 @@ The card only shows what your vehicle actually reports. If a sensor doesn't exis
 | **Alerts** | **EV charging** |
 | ![Unlocked car with an open door, an open window and warnings](docs/images/alerts.png) | ![EV charging, with charging power and time to full](docs/images/ev-charging.png) |
 
-<sub>Screenshots use demo data.</sub>
+<sub>Screenshots use demo data. The car pictures are Kia's own, as the card shows them.</sub>
 
 ## Features
 
@@ -91,7 +91,7 @@ Everything is set up in the card's editor. Edit your dashboard, add **Kia Vehicl
 - **Vehicle**: the car to show. Pick it here and the card finds its sensors, even if you've renamed them.
 - **Entity Prefix**: leave this empty unless your car isn't found. Then enter the start of its entity names, for example `my_car` from `sensor.my_car_fuel_level`.
 - **Display Name**: the name in the card's header.
-- **Vehicle Image URL**: a picture of your car. Without one, the card draws a diagram that shows each door's state.
+- **Vehicle Image URL**: optional. Leave it empty and the card shows Kia's picture of your exact model, trim and colour when the integration provides one (Kia USA does). Otherwise it draws a diagram that shows each door's state.
 
 ### Climate presets
 
@@ -128,7 +128,7 @@ The [Kia UVO / Hyundai Bluelink integration](https://github.com/Hyundai-Kia-Conn
 
 ## Privacy
 
-The card talks only to your Home Assistant, with one exception: with **Show weather at the car's location** turned on, it asks Open-Meteo for the weather at the car's approximate location, about every 30 minutes. Opening the location link sends the coordinates to Google Maps.
+The card talks only to your Home Assistant, with two exceptions. Your browser loads the car's picture from Kia's owner site (or from your own image URL, if you set one). With **Show weather at the car's location** turned on, the card asks Open-Meteo for the weather at the car's approximate location, about every 30 minutes. Opening the location link sends the coordinates to Google Maps.
 
 ## Contributing
 

@@ -16,6 +16,7 @@ Planned as 2.13.0. Available for testing as the `v2.13.0-beta` pre-releases.
 - Optional weather at the car's location, from Open-Meteo. Turn it on in the card's editor. Off by default because it shares the car's approximate location.
 - A second tap to confirm unlocking. Locking still takes one tap.
 - Seat heater sensors now feed the "Climate Active" row on vehicles that don't send the detailed climate data.
+- Kia's picture of your exact model, trim and colour, when no image URL is set and the integration provides one (Kia USA). If it fails to load, the card draws its diagram instead.
 - Screenshots in the README, including the card editor.
 
 ### Changed

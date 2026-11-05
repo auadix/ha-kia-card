@@ -23,6 +23,15 @@ function loadCard() {
         getElementById: (id) => ({
           addEventListener: (type, fn) => { listeners[id] = fn; },
         }),
+        querySelector: (selector) => {
+          if (selector !== '.vehicle-image') return null;
+          const src = this.shadowRoot.innerHTML.match(/<img class="vehicle-image" src="([^"]*)"/)?.[1];
+          if (src === undefined) return null;
+          return {
+            getAttribute: () => src.replace(/&amp;/g, '&'),
+            addEventListener: (type, fn) => { listeners[`image-${type}`] = fn; },
+          };
+        },
       };
       return this.shadowRoot;
     }
@@ -612,4 +621,37 @@ test('editor offers vehicles and does not rebuild on unrelated hass updates', ()
   editor.hass = { ...hass, states: { ...hass.states } };
   editor.setConfig({ device_id: 'd1' });
   assert.equal(renders, 1);
+});
+
+const kiaPicture = (imagePath, imageName = 'car.png') => ({
+  'sensor.car_odometer': entity('12000'),
+  'sensor.car_data': entity('on', {
+    vehicle_data: { vehicleConfig: { vehicleDetail: { images: [{ imageName, imagePath, imageType: 1 }] } } },
+  }),
+});
+const imageSrc = (card) => card.shadowRoot.innerHTML.match(/<img class="vehicle-image" src="([^"]*)"/)?.[1] ?? null;
+
+test('uses the picture Kia sends when no image is configured', () => {
+  const card = mount({ vehicle_id: 'car' }, { states: kiaPicture('/content/dam/kia/us/owners/image/vehicle/2025/sorento/sx/') });
+  assert.equal(imageSrc(card), 'https://owners.kia.com/content/dam/kia/us/owners/image/vehicle/2025/sorento/sx/car.png');
+});
+
+test('a configured image wins over the picture Kia sends', () => {
+  const card = mount({ vehicle_id: 'car', image: 'https://example.com/mine.png' },
+    { states: kiaPicture('/content/dam/kia/us/owners/image/vehicle/2025/sorento/sx/') });
+  assert.equal(imageSrc(card), 'https://example.com/mine.png');
+});
+
+test('picture paths from other sites are not guessed', () => {
+  const card = mount({ vehicle_id: 'car' }, { states: kiaPicture('/content/dam/hyundai/us/vehicle/') });
+  assert.equal(imageSrc(card), null);
+  assert.match(card.shadowRoot.innerHTML, /<svg/);
+});
+
+test('a picture that fails to load falls back to the diagram', () => {
+  const card = mount({ vehicle_id: 'car' }, { states: kiaPicture('/content/dam/kia/us/owners/image/vehicle/2012/gone/') });
+  assert.ok(imageSrc(card));
+  card.shadowRoot.listeners['image-error']();
+  assert.equal(imageSrc(card), null);
+  assert.match(card.shadowRoot.innerHTML, /<svg/);
 });
