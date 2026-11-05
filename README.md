@@ -1,7 +1,7 @@
 # Kia Vehicle Card for Home Assistant
 
 [![hacs_badge](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://github.com/custom-components/hacs)
-![Version](https://img.shields.io/badge/version-2.11.0-blue)
+![Version](https://img.shields.io/badge/version-2.12.0-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
 A beautiful, modern, and comprehensive Lovelace card for Kia and Hyundai vehicles using the [Kia UVO / Hyundai Bluelink integration](https://github.com/Hyundai-Kia-Connect/kia_uvo).

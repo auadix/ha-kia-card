@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.12.0] - 2026-11-05
+
+### Added
+- Vehicle picker in the card editor. Choose your car and the card finds its entities, even if they were renamed
+- 12V warning level, link status and roadside assistance rows (shown as raw values)
+- Outside temperature, set temperature and EV range
+- Tire pressure readings, plus high beam and bi-function headlamp faults
+
+### Changed
+- Sensors that are missing or unavailable are now hidden. The card no longer shows "Unlocked", "All Closed", "All Good" or "All OK" without data to back them up
+- Controls only appear when they can work on your install
+- `device_id` is filled in automatically, and `vehicle_id` is now optional
+- The location shows an address, a zone name or "View on map" instead of `not_home`
+
+### Fixed
+- Lamp fault and oil warnings on current `kia_uvo` installs, where those entities have new names
+- EV range never appearing
+- The card staying blank when no vehicle was configured
+- The editor losing focus while typing
+
 ## [2.7.0] - 2026-01-09
 
 ### Added
@@ -104,6 +124,7 @@ See [TODO.md](TODO.md) for planned features in upcoming releases.
 
 ---
 
+[2.12.0]: https://github.com/auadix/ha-kia-card/releases/tag/v2.12.0
 [2.7.0]: https://github.com/auadix/ha-kia-card/releases/tag/v2.7.0
 [2.6.0]: https://github.com/auadix/ha-kia-card/releases/tag/v2.6.0
 [2.5.0]: https://github.com/auadix/ha-kia-card/releases/tag/v2.5.0
