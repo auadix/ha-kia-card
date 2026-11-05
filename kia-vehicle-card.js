@@ -39,6 +39,20 @@
 
 const INTEGRATION_DOMAIN = 'kia_uvo';
 const UNKNOWN_STATES = new Set(['unavailable', 'unknown', '', '--', '—']);
+const UNLOCK_CONFIRM_MS = 4000;
+const CLOCK_REFRESH_MS = 60000;
+const KM_TO_MILES = 0.621371;
+
+// Commands the API library has no implementation for. On a fork these fail
+// silently, so the card can't rely on an error to show they don't work.
+const NO_HAZARD_COMMANDS = new Set(['Kia USA']);
+const NO_VALET_COMMANDS = /USA$/;
+
+// Valid in every region: Australia only accepts 17-26.5°C, in 0.5° steps
+const TEMP_DEFAULTS = {
+  '°F': { cool: 68, warm: 80, custom: 72 },
+  '°C': { cool: 19, warm: 26, custom: 22 },
+};
 
 // ent(domain, translation_key, ...entity id suffixes)
 // translation_key is how current kia_uvo identifies an entity, whatever its id.
@@ -59,6 +73,7 @@ const ENTITIES = {
   // Status
   lock: ent('lock', 'door_lock'),
   engine: ent('binary_sensor', 'engine_is_running', 'engine'),
+  remoteIgnition: ent('binary_sensor', 'remote_ignition'),
   airCon: ent('binary_sensor', 'air_control_is_on', 'air_conditioner'),
   defrost: ent('binary_sensor', 'defrost_is_on', 'defrost'),
   evCharging: ent('binary_sensor', 'ev_battery_is_charging', 'ev_battery_charge'),
@@ -151,6 +166,22 @@ function findVehicleDevices(hass) {
   });
 }
 
+// start_climate takes the unit of the API's region, whatever the user's HA uses
+function climateUnit(hass, deviceId) {
+  const manufacturer = hass?.devices?.[deviceId]?.manufacturer;
+  if (manufacturer) return manufacturer.endsWith('USA') ? '°F' : '°C';
+  return hass?.config?.unit_system?.temperature === '°C' ? '°C' : '°F';
+}
+
+function presetTemp(config, preset, unit) {
+  const value = Number(config[`${preset}_temp`]);
+  if (!value) return TEMP_DEFAULTS[unit][preset];
+  // Older versions always stored °F, so convert values in the wrong range
+  if (unit === '°C' && value > 40) return Math.round(((value - 32) * 5 / 9) * 2) / 2;
+  if (unit === '°F' && value <= 40) return Math.round(value * 9 / 5 + 32);
+  return value;
+}
+
 // Longest shared "<prefix>_" of a device's entities, e.g. "my_car" from my_car_odometer
 function commonObjectIdPrefix(entityIds) {
   const objectIds = entityIds.map((id) => id.split('.')[1]);
@@ -209,10 +240,7 @@ class KiaVehicleCard extends HTMLElement {
       show_status_row: true,
       theme: 'dark',
       device_id: '',
-      // Climate presets
-      cool_temp: 68,
-      warm_temp: 80,
-      custom_temp: 72,
+      // Climate presets (cool_temp, warm_temp, custom_temp default by region)
       duration: 10,
       // Warm preset accessories (which to enable)
       warm_steering_wheel: true,
@@ -243,9 +271,56 @@ class KiaVehicleCard extends HTMLElement {
   }
 
   set hass(hass) {
-    if (hass?.entities !== this._hass?.entities) this._index = null;
+    const previous = this._hass;
+    if (hass?.entities !== previous?.entities) this._index = null;
     this._hass = hass;
+    if (!previous || this.needsRender(previous)) this.render();
+  }
+
+  // hass is replaced on every state change in Home Assistant, so rebuild only
+  // when something this card shows has changed
+  needsRender(previous) {
+    const hass = this._hass;
+    if (hass.entities !== previous.entities || hass.services !== previous.services
+      || hass.devices !== previous.devices) return true;
+    const tracked = Object.keys(ENTITIES).map((key) => this.entityId(key)).filter(Boolean);
+    const trackedKey = tracked.join();
+    if (trackedKey !== this._trackedKey) {
+      this._trackedKey = trackedKey;
+      return true;
+    }
+    return tracked.some((id) => hass.states[id] !== previous.states[id]);
+  }
+
+  connectedCallback() {
+    this._clock = setInterval(() => this.updateClock(), CLOCK_REFRESH_MS);
+  }
+
+  disconnectedCallback() {
+    clearInterval(this._clock);
+    this.disarmUnlock();
+  }
+
+  // Keeps "12 min ago" moving between data updates without a full redraw
+  updateClock() {
+    const time = this.formatTime(this.stateOf('lastUpdated'));
+    const element = this.shadowRoot.getElementById('updated-time');
+    if (time && element) element.textContent = `Updated ${time}`;
+  }
+
+  armUnlock() {
+    this._unlockArmed = true;
+    clearTimeout(this._unlockTimer);
+    this._unlockTimer = setTimeout(() => {
+      this.disarmUnlock();
+      this.render();
+    }, UNLOCK_CONFIRM_MS);
     this.render();
+  }
+
+  disarmUnlock() {
+    this._unlockArmed = false;
+    clearTimeout(this._unlockTimer);
   }
 
   get index() {
@@ -295,6 +370,22 @@ class KiaVehicleCard extends HTMLElement {
     return this.index.deviceId;
   }
 
+  get manufacturer() {
+    return this._hass?.devices?.[this.deviceId]?.manufacturer ?? '';
+  }
+
+  get temperatureUnit() {
+    return climateUnit(this._hass, this.deviceId);
+  }
+
+  temperatureFor(preset) {
+    return presetTemp(this._config, preset, this.temperatureUnit);
+  }
+
+  distanceUnit(key) {
+    return this.attrOf(key, 'unit_of_measurement') || this._hass?.config?.unit_system?.length || 'mi';
+  }
+
   // "12.5 psi" style value using the entity's own unit, or null
   measurement(key) {
     const value = this.stateOf(key);
@@ -310,9 +401,8 @@ class KiaVehicleCard extends HTMLElement {
   }
 
   callService(domain, service, data) {
-    if (this._hass) {
-      this._hass.callService(domain, service, data);
-    }
+    // Home Assistant shows its own toast when a call fails
+    Promise.resolve(this._hass?.callService(domain, service, data)).catch(() => {});
   }
 
   renderMessage(html) {
@@ -339,6 +429,7 @@ class KiaVehicleCard extends HTMLElement {
     const bool = (key) => this.boolOf(key);
     const lockState = this.stateOf('lock');
     const tracker = this.stateOf('tracker');
+    const rangeKey = ['fuelRange', 'totalRange', 'evRange'].find((key) => this.stateOf(key) !== null);
     const trackerId = this.entityId('tracker');
     const rawInfo = this._hass.states[this.entityId('data')]?.attributes?.vehicle_data?.lastVehicleInfo;
     const rawStatus = rawInfo?.vehicleStatusRpt?.vehicleStatus;
@@ -346,11 +437,13 @@ class KiaVehicleCard extends HTMLElement {
     // Gather data. null always means "unknown": hide it, never assume it's fine.
     const data = {
       // Main stats
-      range: this.stateOf('fuelRange') ?? this.stateOf('totalRange') ?? this.stateOf('evRange'),
+      range: rangeKey ? this.stateOf(rangeKey) : null,
+      rangeUnit: rangeKey ? this.distanceUnit(rangeKey) : null,
       fuel: this.stateOf('fuelLevel'),
       battery: this.stateOf('carBattery'),
       evBattery: this.stateOf('evBattery'),
       odometer: this.stateOf('odometer'),
+      odometerUnit: this.distanceUnit('odometer'),
 
       // Status - use lock entity directly (most reliable)
       locked: lockState === null ? null : lockState === 'locked',
@@ -403,6 +496,7 @@ class KiaVehicleCard extends HTMLElement {
 
       // Service info
       nextService: this.stateOf('nextService'),
+      nextServiceUnit: this.distanceUnit('nextService'),
 
       // Speed and diagnostic numeric sensors
       speed: this.stateOf('speed'),
@@ -476,6 +570,7 @@ class KiaVehicleCard extends HTMLElement {
 
     const fuelPercent = getNum(data.fuel);
     const batteryPercent = getNum(data.battery);
+    const evBatteryPercent = getNum(data.evBattery);
     const doors = [data.frontLeftDoor, data.frontRightDoor, data.backLeftDoor, data.backRightDoor, data.trunk, data.hood];
     const windows = [data.frontLeftWindow, data.frontRightWindow, data.backLeftWindow, data.backRightWindow, data.sunroof];
     const hasDoors = doors.some((door) => door !== null);
@@ -486,6 +581,7 @@ class KiaVehicleCard extends HTMLElement {
     const anyWindowOpen = openWindows > 0;
     const hasHealthIssue = parseInt(data.dtcCount) > 0;
     const isEV = data.evBattery !== null && data.evBattery !== '0';
+    const isFullEV = isEV && data.fuel === null;
 
     // Tires: show the section if anything at all is known about them
     const tires = [
@@ -499,9 +595,17 @@ class KiaVehicleCard extends HTMLElement {
 
     // Only offer controls that can work on this install
     const engineRunning = data.engine === true;
-    const canLock = this.entityId('lock') !== null;
-    const canClimate = this.hasService(engineRunning ? 'stop_climate' : 'start_climate');
-    const canQuickActions = this.hasService('start_hazard_lights_and_horn');
+    // An EV can run climate with no engine at all
+    const climateRunning = engineRunning || (isEV && data.airCon === true);
+    this._climateRunning = climateRunning;
+    const canLock = data.locked !== null;
+    const unlockArmed = this._unlockArmed && data.locked === true;
+    const canClimate = this.hasService(climateRunning ? 'stop_climate' : 'start_climate');
+    const canQuickActions = this.hasService('start_hazard_lights_and_horn')
+      && this.hasService('start_hazard_lights') && !NO_HAZARD_COMMANDS.has(this.manufacturer);
+    const canSetValet = this.hasService('start_valet_mode') && this.hasService('stop_valet_mode')
+      && !NO_VALET_COMMANDS.test(this.manufacturer);
+    const temperatureUnit = this.temperatureUnit;
     const canUpdate = this.hasService('force_update');
     const controlCount = [canLock, canClimate, canQuickActions, canUpdate].filter(Boolean).length;
 
@@ -879,6 +983,12 @@ class KiaVehicleCard extends HTMLElement {
           background: var(--accent-dim);
           border-color: var(--accent);
           color: var(--accent);
+        }
+
+        .control-btn.confirm {
+          background: rgba(245, 158, 11, 0.15);
+          border-color: var(--warning);
+          color: var(--warning);
         }
 
         .control-btn.climate-start {
@@ -1444,10 +1554,16 @@ class KiaVehicleCard extends HTMLElement {
                 <div class="stat-value">${data.fuel}<span class="stat-unit">%</span></div>
               </div>
               ` : ''}
+              ${isFullEV ? `
+              <div class="stat-item">
+                <div class="stat-label">Battery</div>
+                <div class="stat-value">${escapeHtml(data.evBattery)}<span class="stat-unit">%</span></div>
+              </div>
+              ` : ''}
               ${data.range !== null ? `
               <div class="stat-item">
                 <div class="stat-label">Est. Range</div>
-                <div class="stat-value">${this.formatNumber(data.range)}<span class="stat-unit">mi</span></div>
+                <div class="stat-value">${this.formatNumber(data.range)}<span class="stat-unit">${escapeHtml(data.rangeUnit)}</span></div>
               </div>
               ` : ''}
             </div>
@@ -1461,6 +1577,17 @@ class KiaVehicleCard extends HTMLElement {
                 </div>
                 <div class="progress-track">
                   <div class="progress-fill fuel" style="width: ${fuelPercent}%"></div>
+                </div>
+              </div>
+              ` : ''}
+              ${isEV ? `
+              <div class="bar-group">
+                <div class="bar-header">
+                  <span>EV Battery</span>
+                  <span>${escapeHtml(data.evBattery)}%</span>
+                </div>
+                <div class="progress-track">
+                  <div class="progress-fill battery ${data.evCharging ? 'animate-charging' : ''}" style="width: ${evBatteryPercent}%"></div>
                 </div>
               </div>
               ` : ''}
@@ -1501,12 +1628,12 @@ class KiaVehicleCard extends HTMLElement {
               ${data.odometer !== null ? `
               <div class="info-chip">
                 <ha-icon icon="mdi:counter"></ha-icon>
-                <span>${this.formatNumber(data.odometer)} mi</span>
+                <span>${this.formatNumber(data.odometer)} ${escapeHtml(data.odometerUnit)}</span>
               </div>
               ` : ''}
 
               <!-- Next Service with enhanced visual -->
-              ${this.renderServiceChip(data.nextService)}
+              ${this.renderServiceChip(data.nextService, data.nextServiceUnit)}
 
               <!-- Speed (when driving) -->
               ${data.vehicleStatus === 'Driving' && data.speed !== null && parseFloat(data.speed) > 0 ? `
@@ -1676,11 +1803,11 @@ class KiaVehicleCard extends HTMLElement {
               </div>
               ` : ''}
 
-              ${isEV ? `
-              <!-- EV Battery (for EVs) -->
+              <!-- EV state. A full EV shows charge and range in the stats instead. -->
+              ${isEV && (!isFullEV || data.evCharging || data.evPluggedIn) ? `
               <div class="info-chip ${data.evCharging ? 'highlight animate-charging' : ''} full-width">
                 <ha-icon icon="mdi:${data.evCharging ? 'battery-charging' : 'battery'}"></ha-icon>
-                <span>EV: ${data.evBattery}%${data.evRange !== null ? ` · ${escapeHtml(data.evRange)}` : ''} ${data.evCharging ? '⚡ Charging' : ''} ${data.evPluggedIn && !data.evCharging ? '🔌 Plugged In' : ''}</span>
+                <span>${isFullEV ? '' : `EV: ${escapeHtml(data.evBattery)}%${data.evRange !== null ? ` · ${escapeHtml(data.evRange)}` : ''} `}${data.evCharging ? '⚡ Charging' : ''}${data.evPluggedIn && !data.evCharging ? '🔌 Plugged In' : ''}</span>
               </div>
               ` : ''}
             </div>
@@ -1692,15 +1819,15 @@ class KiaVehicleCard extends HTMLElement {
         <div class="controls-section">
           <div class="controls-grid" style="grid-template-columns: repeat(${controlCount}, 1fr);">
             ${canLock ? `
-            <div class="control-btn ${data.locked ? '' : 'active'}" id="btn-lock">
-              <ha-icon icon="mdi:${data.locked ? 'lock-open' : 'lock'}"></ha-icon>
-              <span class="control-label">${data.locked ? 'Unlock' : 'Lock'}</span>
+            <div class="control-btn ${unlockArmed ? 'confirm' : data.locked ? '' : 'active'}" id="btn-lock">
+              <ha-icon icon="mdi:${unlockArmed ? 'alert' : data.locked ? 'lock-open' : 'lock'}"></ha-icon>
+              <span class="control-label">${unlockArmed ? 'Tap to Confirm' : data.locked ? 'Unlock' : 'Lock'}</span>
             </div>
             ` : ''}
             ${canClimate ? `
-            <div class="control-btn ${engineRunning ? 'climate-stop' : 'climate-start'}" id="btn-climate">
-              <ha-icon icon="mdi:${engineRunning ? 'stop-circle-outline' : 'power'}"></ha-icon>
-              <span class="control-label">${engineRunning ? 'Climate Stop' : 'Climate Start'}</span>
+            <div class="control-btn ${climateRunning ? 'climate-stop' : 'climate-start'}" id="btn-climate">
+              <ha-icon icon="mdi:${climateRunning ? 'stop-circle-outline' : 'power'}"></ha-icon>
+              <span class="control-label">${climateRunning ? 'Climate Stop' : 'Climate Start'}</span>
             </div>
             ` : ''}
             ${canQuickActions ? `
@@ -1729,7 +1856,7 @@ class KiaVehicleCard extends HTMLElement {
             </div>
             <div class="quick-action-btn" id="qa-horn">
               <ha-icon icon="mdi:bullhorn"></ha-icon>
-              <span class="quick-action-label">Horn</span>
+              <span class="quick-action-label">Horn + Lights</span>
             </div>
             <div class="quick-action-btn" id="qa-lights">
               <ha-icon icon="mdi:car-light-high"></ha-icon>
@@ -1752,21 +1879,21 @@ class KiaVehicleCard extends HTMLElement {
                 <ha-icon icon="mdi:snowflake"></ha-icon>
               </div>
               <div class="preset-title">Start Cool</div>
-              <div class="preset-subtitle">${this._config.cool_temp}°F</div>
+              <div class="preset-subtitle">${this.temperatureFor('cool')}${temperatureUnit}</div>
             </div>
             <div class="climate-preset warm ${this._climateMode === 'warm' ? 'selected' : ''}" id="preset-warm">
               <div class="preset-icon">
                 <ha-icon icon="mdi:white-balance-sunny"></ha-icon>
               </div>
               <div class="preset-title">Start Warm</div>
-              <div class="preset-subtitle">${this._config.warm_temp}°F + Accessories</div>
+              <div class="preset-subtitle">${this.temperatureFor('warm')}${temperatureUnit} + Accessories</div>
             </div>
             <div class="climate-preset custom ${this._climateMode === 'custom' ? 'selected' : ''}" id="preset-custom">
               <div class="preset-icon">
                 <ha-icon icon="mdi:tune-variant"></ha-icon>
               </div>
               <div class="preset-title">Start Custom</div>
-              <div class="preset-subtitle">${this._config.custom_temp}°F</div>
+              <div class="preset-subtitle">${this.temperatureFor('custom')}${temperatureUnit}</div>
             </div>
           </div>
           <button class="climate-start-btn" id="btn-start-climate" ${!this._climateMode ? 'disabled' : ''}>
@@ -1786,8 +1913,8 @@ class KiaVehicleCard extends HTMLElement {
               <ha-icon icon="mdi:car"></ha-icon>
               <span>Vehicle Status</span>
             </div>
-            <div class="status-row-right ${data.vehicleStatus === 'Driving' ? 'driving' : 'parked'}">
-              <ha-icon icon="mdi:${data.vehicleStatus === 'Driving' ? 'steering' : 'parking'}"></ha-icon>
+            <div class="status-row-right ${engineRunning ? 'driving' : 'parked'}">
+              <ha-icon icon="mdi:${{ Driving: 'steering', 'Remote Start': 'remote', 'Engine On': 'engine' }[data.vehicleStatus] ?? 'parking'}"></ha-icon>
               <span>${escapeHtml(data.vehicleStatus)}</span>
             </div>
           </div>
@@ -1921,7 +2048,7 @@ class KiaVehicleCard extends HTMLElement {
               <span style="margin-right: 8px; color: ${data.valetMode ? 'var(--warning)' : 'var(--text-secondary)'}">
                 ${data.valetMode ? 'Active' : 'Inactive'}
               </span>
-              <div class="toggle-switch ${data.valetMode ? 'active' : ''}" id="valet-toggle"></div>
+              ${canSetValet ? `<div class="toggle-switch ${data.valetMode ? 'active' : ''}" id="valet-toggle"></div>` : ''}
             </div>
           </div>
           ` : ''}
@@ -1933,7 +2060,7 @@ class KiaVehicleCard extends HTMLElement {
           ${this.formatTime(data.lastUpdated) ? `
           <div class="footer-item">
             <ha-icon icon="mdi:clock-outline"></ha-icon>
-            <span>Updated ${escapeHtml(this.formatTime(data.lastUpdated))}</span>
+            <span id="updated-time">Updated ${escapeHtml(this.formatTime(data.lastUpdated))}</span>
           </div>
           ` : ''}
           ${data.location !== null || (data.latitude && data.longitude) ? `
@@ -1951,25 +2078,25 @@ class KiaVehicleCard extends HTMLElement {
     this.addEventListeners();
   }
 
+  // Only says Driving when something proves it: a running engine alone could
+  // just as easily be a remote start in the driveway
   getVehicleStatus() {
-    // Check engine first - if running, likely driving
+    const reported = this.stateOf('vehicleStatus') ?? this.stateOf('drivingStatus');
     const engine = this.boolOf('engine');
-    if (engine) return 'Driving';
-
-    // Check for explicit status sensor
-    const status = this.stateOf('vehicleStatus') ?? this.stateOf('drivingStatus');
-    if (status) return status;
-
-    return engine === false ? 'Parked' : null;
+    if (!engine) return reported ?? (engine === false ? 'Parked' : null);
+    if (this.boolOf('remoteIgnition')) return 'Remote Start';
+    if (parseFloat(this.stateOf('speed')) > 0) return 'Driving';
+    return reported ?? 'Engine On';
   }
 
-  renderServiceChip(nextServiceMiles) {
+  renderServiceChip(nextService, unit) {
     // Enhanced service countdown with color coding
     // Assumes 8000 mile service intervals (common for Kia/Hyundai)
     const SERVICE_INTERVAL = 8000;
 
-    const milesRemaining = parseFloat(nextServiceMiles);
-    if (isNaN(milesRemaining)) return '';
+    const remaining = parseFloat(nextService);
+    if (isNaN(remaining)) return '';
+    const milesRemaining = unit === 'km' ? remaining * KM_TO_MILES : remaining;
 
     // Determine color class based on miles remaining
     let colorClass = 'success'; // Green: >3000 mi
@@ -1989,7 +2116,7 @@ class KiaVehicleCard extends HTMLElement {
     return `
       <div class="info-chip service-chip ${colorClass}" style="position: relative; overflow: visible;">
         <ha-icon icon="mdi:car-wrench" style="color: ${iconColor};"></ha-icon>
-        <span>${this.formatNumber(milesRemaining)} mi</span>
+        <span>${this.formatNumber(remaining)} ${escapeHtml(unit)}</span>
         <div class="service-progress-mini" style="
           position: absolute;
           bottom: 2px;
@@ -2110,14 +2237,23 @@ class KiaVehicleCard extends HTMLElement {
   addEventListeners() {
     // Lock toggle button
     this.shadowRoot.getElementById('btn-lock')?.addEventListener('click', () => {
-      const lockEntity = this.entityId('lock');
-      const isLocked = this.stateOf('lock') === 'locked';
-      this.callService('lock', isLocked ? 'unlock' : 'lock', { entity_id: lockEntity });
+      const entity_id = this.entityId('lock');
+      if (this.stateOf('lock') !== 'locked') {
+        this.callService('lock', 'lock', { entity_id });
+        return;
+      }
+      if (!this._unlockArmed) {
+        this.armUnlock();
+        return;
+      }
+      this.disarmUnlock();
+      this.callService('lock', 'unlock', { entity_id });
+      this.render();
     });
 
     // Climate toggle button - opens panel when off, stops climate when on
     this.shadowRoot.getElementById('btn-climate')?.addEventListener('click', () => {
-      if (this.boolOf('engine')) {
+      if (this._climateRunning) {
         // Stop climate
         if (!this.deviceId) {
           this.showNotification('Please select your vehicle in the card editor');
@@ -2148,7 +2284,7 @@ class KiaVehicleCard extends HTMLElement {
       this.render();
     });
 
-    // Quick Actions - Horn only
+    // Quick Actions - Horn (the API has no horn-only command)
     this.shadowRoot.getElementById('qa-horn')?.addEventListener('click', () => {
       if (!this.deviceId) {
         this.showNotification('Please select your vehicle in the card editor');
@@ -2165,7 +2301,7 @@ class KiaVehicleCard extends HTMLElement {
         this.showNotification('Please select your vehicle in the card editor');
         return;
       }
-      this.callService('kia_uvo', 'start_hazard_lights_and_horn', { device_id: this.deviceId });
+      this.callService('kia_uvo', 'start_hazard_lights', { device_id: this.deviceId });
       this._showQuickActions = false;
       this.render();
     });
@@ -2203,16 +2339,10 @@ class KiaVehicleCard extends HTMLElement {
       }
       if (!this._climateMode) return;
 
-      const temps = {
-        cool: this._config.cool_temp,
-        warm: this._config.warm_temp,
-        custom: this._config.custom_temp
-      };
-
       const climateData = {
         device_id: this.deviceId,
         climate: true,
-        temperature: temps[this._climateMode],  // Note: service uses 'temperature' not 'set_temp'
+        temperature: this.temperatureFor(this._climateMode),  // Note: service uses 'temperature' not 'set_temp'
         duration: this._config.duration,
         defrost: this._climateMode === 'warm',
         heating: this._climateMode === 'warm' ? 1 : 0
@@ -2260,9 +2390,12 @@ class KiaVehicleCard extends HTMLElement {
 
     // Valet mode toggle
     this.shadowRoot.getElementById('valet-toggle')?.addEventListener('click', () => {
-      // Note: Valet mode toggle may not be supported by all vehicles via API
-      // This is a placeholder - actual implementation depends on API support
-      this.showNotification('Valet mode toggle is not available via remote command. Please use the vehicle controls.');
+      if (!this.deviceId) {
+        this.showNotification('Please select your vehicle in the card editor');
+        return;
+      }
+      const service = this.boolOf('valetMode') ? 'stop_valet_mode' : 'start_valet_mode';
+      this.callService('kia_uvo', service, { device_id: this.deviceId });
     });
 
     // Location link - open in Google Maps
@@ -2276,12 +2409,11 @@ class KiaVehicleCard extends HTMLElement {
   }
 
   showNotification(message) {
-    if (this._hass) {
-      this._hass.callService('persistent_notification', 'create', {
-        message: message,
-        title: 'Kia Vehicle Card'
-      });
-    }
+    this.dispatchEvent(new CustomEvent('hass-notification', {
+      detail: { message },
+      bubbles: true,
+      composed: true,
+    }));
   }
 
   getCardSize() {
@@ -2300,9 +2432,6 @@ class KiaVehicleCard extends HTMLElement {
       theme: 'dark',
       show_controls: true,
       show_status_row: true,
-      cool_temp: 68,
-      warm_temp: 80,
-      custom_temp: 72,
       duration: 10
     };
   }
@@ -2396,18 +2525,15 @@ class KiaVehicleCardEditor extends HTMLElement {
 
         <div class="editor-section">Climate Presets</div>
         <div class="editor-grid">
+          ${['Cool', 'Warm', 'Custom'].map((label) => {
+            const preset = label.toLowerCase();
+            const unit = climateUnit(this._hass, this._config.device_id);
+            return `
           <div class="editor-row">
-            <label>Cool Temp (°F)</label>
-            <input type="number" id="cool_temp" value="${this._config.cool_temp || 68}" min="60" max="80">
-          </div>
-          <div class="editor-row">
-            <label>Warm Temp (°F)</label>
-            <input type="number" id="warm_temp" value="${this._config.warm_temp || 80}" min="65" max="85">
-          </div>
-          <div class="editor-row">
-            <label>Custom Temp (°F)</label>
-            <input type="number" id="custom_temp" value="${this._config.custom_temp || 72}" min="60" max="85">
-          </div>
+            <label>${label} Temp (${unit})</label>
+            <input type="number" id="${preset}_temp" value="${presetTemp(this._config, preset, unit)}" step="${unit === '°C' ? 0.5 : 1}">
+          </div>`;
+          }).join('')}
           <div class="editor-row">
             <label>Duration (min)</label>
             <input type="number" id="duration" value="${this._config.duration || 10}" min="5" max="20">
@@ -2489,7 +2615,7 @@ class KiaVehicleCardEditor extends HTMLElement {
         const handler = (e) => {
           let value = e.target.value;
           if (['cool_temp', 'warm_temp', 'custom_temp', 'duration'].includes(field)) {
-            value = parseInt(value) || 0;
+            value = parseFloat(value) || 0;
           }
           this._config = { ...this._config, [field]: value };
           this.dispatchEvent(new CustomEvent('config-changed', { detail: { config: this._config } }));

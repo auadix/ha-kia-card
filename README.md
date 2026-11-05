@@ -166,9 +166,9 @@ warm_steering_level: 2          # 1=Low, 2=High (heating only)
 | `show_controls` | boolean | true | Show control buttons (lock, climate, horn, update) |
 | `show_status_row` | boolean | true | Show status rows (vehicle status, health, tire pressure, valet) |
 | **Climate Presets** | | | |
-| `cool_temp` | number | 68 | Temperature for "Cool" preset (°F) |
-| `warm_temp` | number | 80 | Temperature for "Warm" preset (°F) |
-| `custom_temp` | number | 72 | Temperature for "Custom" preset (°F) |
+| `cool_temp` | number | 68°F / 19°C | Temperature for "Cool" preset. Uses °F in the USA and °C elsewhere |
+| `warm_temp` | number | 80°F / 26°C | Temperature for "Warm" preset |
+| `custom_temp` | number | 72°F / 22°C | Temperature for "Custom" preset |
 | `duration` | number | 10 | Climate duration in minutes (1-30) |
 | **Climate Preset Accessories** | | | *Warm preset only - seats can heat/cool* |
 | `warm_steering_wheel` | boolean | true | Steering wheel (heating only) |

@@ -7,9 +7,13 @@ const vm = require('node:vm');
 
 const fixtures = require('./fixtures/entities.json');
 
+const timers = [];
+
 function loadCard() {
   const elements = {};
   class HTMLElement {
+    dispatchEvent(event) { (this.events ??= []).push(event); }
+
     attachShadow() {
       const listeners = {};
       this.shadowRoot = {
@@ -25,6 +29,11 @@ function loadCard() {
   const sandbox = {
     HTMLElement,
     console: { info() {} },
+    CustomEvent: class { constructor(type, init) { this.type = type; Object.assign(this, init); } },
+    setTimeout: (fn, ms) => { timers.push({ fn, ms }); return timers.length; },
+    clearTimeout: () => {},
+    setInterval: () => 1,
+    clearInterval: () => {},
     window: {},
     document: {},
     customElements: { define: (name, cls) => { elements[name] = cls; } },
@@ -38,6 +47,8 @@ const elements = loadCard();
 const SERVICES = ['start_climate', 'stop_climate', 'force_update', 'start_hazard_lights_and_horn'];
 const services = { kia_uvo: Object.fromEntries(SERVICES.map((name) => [name, {}])) };
 
+const ALL_SERVICES = [...SERVICES, 'start_hazard_lights', 'start_valet_mode', 'stop_valet_mode'];
+const allServices = { kia_uvo: Object.fromEntries(ALL_SERVICES.map((name) => [name, {}])) };
 const entity = (state, attributes = {}) => ({ state, attributes });
 
 const visibleText = (card) => card.shadowRoot.innerHTML
@@ -193,11 +204,229 @@ test('heading falls back to the raw payload when the sensor has no number', () =
   assert.match(mount({ vehicle_id: 'car' }, { states }).shadowRoot.innerHTML, /Heading: 90°/);
 });
 
-test('EV range resolves from its real entity name', () => {
-  const text = visibleText(mount({ vehicle_id: 'car' }, {
-    states: { 'sensor.car_ev_battery_level': entity('80'), 'sensor.car_ev_range': entity('250', { unit_of_measurement: 'km' }) },
-  }));
-  assert.match(text, /EV: 80% · 250 km/);
+test('a full EV leads with battery and range, with no fuel stat', () => {
+  const states = {
+    'sensor.car_ev_battery_level': entity('80'),
+    'sensor.car_ev_range': entity('250', { unit_of_measurement: 'km' }),
+    'binary_sensor.car_ev_battery_charge': entity('on'),
+  };
+  const text = visibleText(mount({ vehicle_id: 'car' }, { states }));
+  assert.match(text, /Battery 80 % Est\. Range 250 km/);
+  assert.match(text, /EV Battery 80%/);
+  assert.match(text, /Charging/);
+  assert.ok(!text.includes('Fuel'));
+});
+
+test('a plug-in hybrid keeps fuel and adds the EV details', () => {
+  const states = {
+    'sensor.car_fuel_level': entity('50'),
+    'sensor.car_ev_battery_level': entity('80'),
+    'sensor.car_ev_range': entity('30', { unit_of_measurement: 'mi' }),
+  };
+  const text = visibleText(mount({ vehicle_id: 'car' }, { states }));
+  assert.match(text, /Fuel 50 %/);
+  assert.match(text, /EV: 80% · 30 mi/);
+});
+
+test('an EV running climate offers stop, a parked gas car with stale AC does not', () => {
+  const ev = { 'sensor.car_ev_battery_level': entity('80'), 'binary_sensor.car_air_conditioner': entity('on') };
+  assert.match(visibleText(mount({ vehicle_id: 'car' }, { states: ev })), /Climate Stop/);
+  const gas = { 'sensor.car_fuel_level': entity('50'), 'binary_sensor.car_air_conditioner': entity('on') };
+  assert.match(visibleText(mount({ vehicle_id: 'car' }, { states: gas })), /Climate Start/);
+});
+
+test('units come from each entity, and service colors stay correct in km', () => {
+  const states = {
+    'sensor.car_fuel_driving_range': entity('500', { unit_of_measurement: 'km' }),
+    'sensor.car_odometer': entity('12000', { unit_of_measurement: 'km' }),
+    'sensor.car_next_service': entity('2000', { unit_of_measurement: 'km' }),
+  };
+  const card = mount({ vehicle_id: 'car' }, { states });
+  const text = visibleText(card);
+  assert.match(text, /500 km/);
+  assert.match(text, /12,000 km/);
+  assert.match(text, /2,000 km/);
+  assert.ok(!text.includes(' mi'));
+  // 2000 km is about 1243 mi: the 1000-3000 mi warning band, not the green one
+  assert.match(card.shadowRoot.innerHTML, /service-chip warning/);
+  const noUnit = { 'sensor.car_odometer': entity('100') };
+  const metric = { config: { unit_system: { length: 'km' } } };
+  assert.match(visibleText(mount({ vehicle_id: 'car' }, { states: noUnit, ...metric })), /100 km/);
+});
+
+function climateCard(manufacturer, config = {}) {
+  const calls = [];
+  const hass = {
+    states: { 'sensor.car_odometer': entity('1') },
+    entities: { 'sensor.car_odometer': { entity_id: 'sensor.car_odometer', platform: 'kia_uvo', device_id: 'd1', translation_key: 'odometer' } },
+    devices: { d1: { manufacturer } },
+    callService: (...args) => { calls.push(args); },
+  };
+  const card = mount({ device_id: 'd1', ...config }, hass);
+  return { card, calls };
+}
+
+function startClimate(card, calls, preset) {
+  card._showClimatePanel = true;
+  card._climateMode = preset;
+  card.render();
+  card.shadowRoot.listeners['btn-start-climate']();
+  return calls.at(-1)[2].temperature;
+}
+
+test('climate sends the unit the region expects', () => {
+  const usa = climateCard('Kia USA');
+  assert.equal(startClimate(usa.card, usa.calls, 'cool'), 68);
+  const canada = climateCard('Kia Canada');
+  assert.equal(startClimate(canada.card, canada.calls, 'cool'), 19);
+  usa.card._showClimatePanel = true;
+  usa.card.render();
+  assert.match(usa.card.shadowRoot.innerHTML, /68°F/);
+  canada.card._showClimatePanel = true;
+  canada.card.render();
+  assert.match(canada.card.shadowRoot.innerHTML, /19°C/);
+});
+
+test('default climate temperatures are accepted by every region', () => {
+  // KiaUvoApiAU.temperature_range is the narrowest: 17-26.5 in 0.5 steps
+  for (const preset of ['cool', 'warm', 'custom']) {
+    const { card, calls } = climateCard('Hyundai Australia');
+    const value = startClimate(card, calls, preset);
+    assert.ok(value >= 17 && value <= 26.5 && value * 2 === Math.round(value * 2), `${preset}: ${value}`);
+  }
+});
+
+test('temperatures saved in the wrong unit by older versions are converted', () => {
+  const metric = climateCard('Kia Europe', { cool_temp: 68, warm_temp: 80 });
+  assert.equal(startClimate(metric.card, metric.calls, 'cool'), 20);
+  assert.equal(startClimate(metric.card, metric.calls, 'warm'), 26.5);
+  const usa = climateCard('Kia USA', { custom_temp: 72 });
+  assert.equal(startClimate(usa.card, usa.calls, 'custom'), 72);
+  const kept = climateCard('Kia Europe', { custom_temp: 21.5 });
+  assert.equal(startClimate(kept.card, kept.calls, 'custom'), 21.5);
+});
+
+function lockCard(state = 'locked') {
+  const calls = [];
+  const card = mount({ vehicle_id: 'car' }, {
+    states: { 'lock.car_door_lock': entity(state) },
+    callService: (...args) => { calls.push(args.slice(0, 2)); },
+  });
+  return { card, calls, tap: () => card.shadowRoot.listeners['btn-lock']() };
+}
+
+test('unlock takes a second tap, and the first tap sends nothing', () => {
+  const { card, calls, tap } = lockCard();
+  tap();
+  assert.deepEqual(calls, []);
+  assert.match(visibleText(card), /Tap to Confirm/);
+  tap();
+  assert.deepEqual(JSON.parse(JSON.stringify(calls)), [['lock', 'unlock']]);
+  assert.ok(!visibleText(card).includes('Tap to Confirm'));
+});
+
+test('the unlock confirmation expires', () => {
+  const { card, calls, tap } = lockCard();
+  tap();
+  const timer = timers.at(-1);
+  assert.ok(timer.ms >= 3000 && timer.ms <= 6000);
+  timer.fn();
+  assert.ok(!visibleText(card).includes('Tap to Confirm'));
+  tap();
+  assert.deepEqual(calls, [], 'a tap after expiry starts over');
+});
+
+test('locking still takes one tap', () => {
+  const { calls, tap } = lockCard('unlocked');
+  tap();
+  assert.deepEqual(JSON.parse(JSON.stringify(calls)), [['lock', 'lock']]);
+});
+
+test('vehicle status needs proof before saying Driving', () => {
+  const status = (states) => mount({ vehicle_id: 'car' }, { states }).getVehicleStatus();
+  const on = { 'binary_sensor.car_engine': entity('on') };
+  assert.equal(status(on), 'Engine On');
+  assert.equal(status({ ...on, 'sensor.car_speed': entity('0') }), 'Engine On');
+  assert.equal(status({ ...on, 'sensor.car_speed': entity('35') }), 'Driving');
+  assert.equal(status({ ...on, 'sensor.car_speed': entity('0'), 'binary_sensor.car_remote_ignition': entity('on') }), 'Remote Start');
+  assert.equal(status({ 'binary_sensor.car_engine': entity('off') }), 'Parked');
+  assert.equal(status({ 'sensor.car_odometer': entity('1') }), null);
+});
+
+test('each quick action calls the command it names', () => {
+  const calls = [];
+  const card = mount({ device_id: 'd1', vehicle_id: 'car' }, {
+    states: { 'sensor.car_odometer': entity('1') },
+    services: allServices,
+    callService: (...args) => { calls.push(args[1]); },
+  });
+  card._index = { deviceId: 'd1', byTranslationKey: new Map(), prefixes: ['car'] };
+  card._showQuickActions = true;
+  card.render();
+  card.shadowRoot.listeners['qa-lights']();
+  assert.deepEqual(calls, ['start_hazard_lights']);
+  card._showQuickActions = true;
+  card.render();
+  assert.match(visibleText(card), /Horn \+ Lights/);
+});
+
+function regionCard(manufacturer) {
+  return mount({ device_id: 'd1' }, {
+    services: allServices,
+    states: { 'binary_sensor.car_valet_mode': entity('off'), 'sensor.car_odometer': entity('1') },
+    entities: {
+      'binary_sensor.car_valet_mode': { entity_id: 'binary_sensor.car_valet_mode', platform: 'kia_uvo', device_id: 'd1' },
+      'sensor.car_odometer': { entity_id: 'sensor.car_odometer', platform: 'kia_uvo', device_id: 'd1' },
+    },
+    devices: { d1: { manufacturer } },
+  });
+}
+
+test('commands the library cannot send are hidden, status stays', () => {
+  const kiaUsa = regionCard('Kia USA');
+  assert.ok(!visibleText(kiaUsa).includes('More'));
+  assert.match(visibleText(kiaUsa), /Valet Mode Inactive/);
+  assert.ok(!kiaUsa.shadowRoot.innerHTML.includes('valet-toggle'));
+
+  const hyundaiUsa = regionCard('Hyundai USA');
+  assert.match(visibleText(hyundaiUsa), /More/);
+  assert.ok(!hyundaiUsa.shadowRoot.innerHTML.includes('valet-toggle'));
+
+  const europe = regionCard('Kia Europe');
+  assert.match(visibleText(europe), /More/);
+  assert.ok(europe.shadowRoot.innerHTML.includes('valet-toggle'));
+});
+
+test('only changes to the card\'s own entities redraw it', () => {
+  const states = { 'sensor.car_odometer': entity('1'), 'light.kitchen': entity('off') };
+  const base = { callService() {}, services };
+  const card = mount({ vehicle_id: 'car' }, { ...base, states });
+  let renders = 0;
+  const render = card.render.bind(card);
+  card.render = () => { renders += 1; render(); };
+
+  card.hass = { ...base, states };
+  renders = 0;
+  for (let i = 0; i < 100; i += 1) {
+    card.hass = { ...base, states: { ...states, 'light.kitchen': entity(String(i)) } };
+  }
+  assert.equal(renders, 0);
+
+  card.hass = { ...base, states: { ...states, 'sensor.car_odometer': entity('2') } };
+  assert.equal(renders, 1);
+  assert.match(visibleText(card), /2 mi/);
+});
+
+test('a failed command does not cause an unhandled rejection', async () => {
+  const failures = [];
+  const onFailure = (error) => failures.push(error);
+  process.on('unhandledRejection', onFailure);
+  const { card } = lockCard('unlocked');
+  card._hass = { ...card._hass, callService: () => Promise.reject(new Error('not supported')) };
+  card.shadowRoot.listeners['btn-lock']();
+  await new Promise((resolve) => { setImmediate(resolve); });
+  process.off('unhandledRejection', onFailure);
+  assert.deepEqual(failures, []);
 });
 
 test('tires: unknown is neither OK nor a warning, an open warning still shows', () => {
