@@ -165,6 +165,7 @@ warm_steering_level: 2          # 1=Low, 2=High (heating only)
 | `image` | string | - | URL to vehicle image (optional, will use SVG fallback) |
 | `show_controls` | boolean | true | Show control buttons (lock, climate, horn, update) |
 | `show_status_row` | boolean | true | Show status rows (vehicle status, health, tire pressure, valet) |
+| `car_weather` | boolean | false | Show the weather at the car's location. Sends its approximate location to [Open-Meteo](https://open-meteo.com) |
 | **Climate Presets** | | | |
 | `cool_temp` | number | 68°F / 19°C | Temperature for "Cool" preset. Uses °F in the USA and °C elsewhere |
 | `warm_temp` | number | 80°F / 26°C | Temperature for "Warm" preset |

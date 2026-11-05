@@ -1,7 +1,7 @@
 /**
  * Kia Vehicle Card for Home Assistant
  * A modern, comprehensive card for Kia/Hyundai vehicles
- * Version: 2.13.0-beta.2
+ * Version: 2.13.0-beta.3
  *
  * Features:
  * - MDI icons (no emojis)
@@ -47,6 +47,22 @@ const KM_TO_MILES = 0.621371;
 // silently, so the card can't rely on an error to show they don't work.
 const NO_HAZARD_COMMANDS = new Set(['Kia USA']);
 const NO_VALET_COMMANDS = /USA$/;
+
+// Kia USA sends the same weather whatever the sky is doing, so it can't be shown
+const FIXED_KIA_WEATHER = new Set(['Kia USA']);
+const WEATHER_API = 'https://api.open-meteo.com/v1/forecast';
+const WEATHER_REFRESH_MS = 30 * 60 * 1000;
+
+// WMO weather codes: [icon type, label]
+const WEATHER_CODES = {
+  0: ['clear', 'Clear'], 1: ['clear', 'Mostly Clear'], 2: ['partly_cloudy', 'Partly Cloudy'], 3: ['cloudy', 'Cloudy'],
+  45: ['fog', 'Fog'], 48: ['fog', 'Fog'],
+  51: ['rain', 'Drizzle'], 53: ['rain', 'Drizzle'], 55: ['rain', 'Drizzle'], 56: ['sleet', 'Freezing Drizzle'], 57: ['sleet', 'Freezing Drizzle'],
+  61: ['rain', 'Light Rain'], 63: ['rain', 'Rain'], 65: ['showers', 'Heavy Rain'], 66: ['sleet', 'Freezing Rain'], 67: ['sleet', 'Freezing Rain'],
+  71: ['snow', 'Light Snow'], 73: ['snow', 'Snow'], 75: ['snow', 'Heavy Snow'], 77: ['snow', 'Snow'],
+  80: ['showers', 'Showers'], 81: ['showers', 'Showers'], 82: ['showers', 'Heavy Showers'], 85: ['snow', 'Snow Showers'], 86: ['snow', 'Snow Showers'],
+  95: ['thunderstorm', 'Thunderstorm'], 96: ['thunderstorm', 'Thunderstorm'], 99: ['thunderstorm', 'Thunderstorm'],
+};
 
 // Valid in every region: Australia only accepts 17-26.5°C, in 0.5° steps
 const TEMP_DEFAULTS = {
@@ -240,6 +256,7 @@ class KiaVehicleCard extends HTMLElement {
       show_status_row: true,
       theme: 'dark',
       device_id: '',
+      car_weather: false,
       // Climate presets (cool_temp, warm_temp, custom_temp default by region)
       duration: 10,
       // Warm preset accessories (which to enable)
@@ -306,6 +323,34 @@ class KiaVehicleCard extends HTMLElement {
     const time = this.formatTime(this.stateOf('lastUpdated'));
     const element = this.shadowRoot.getElementById('updated-time');
     if (time && element) element.textContent = `Updated ${time}`;
+    this.refreshCarWeather();
+  }
+
+  // Off unless the user opts in, because it sends the car's position to Open-Meteo.
+  // Rounded to about 1 km, which is as precise as the forecast anyway.
+  refreshCarWeather() {
+    const position = this._carPosition;
+    if (!this._config.car_weather || !position || !this._hass) return;
+    const latitude = position.latitude.toFixed(2);
+    const longitude = position.longitude.toFixed(2);
+    const key = `${latitude},${longitude}`;
+    const current = this._carWeather;
+    if (current?.key === key && Date.now() - current.at < WEATHER_REFRESH_MS) return;
+    // Also stops a failing service being retried before the next refresh is due
+    this._carWeather = { key, at: Date.now() };
+
+    const fahrenheit = this._hass.config?.unit_system?.temperature !== '°C';
+    const query = `latitude=${latitude}&longitude=${longitude}&current=temperature_2m,weather_code`
+      + `&temperature_unit=${fahrenheit ? 'fahrenheit' : 'celsius'}`;
+    fetch(`${WEATHER_API}?${query}`)
+      .then((response) => (response.ok ? response.json() : Promise.reject()))
+      .then(({ current: reading }) => {
+        const [type, label] = WEATHER_CODES[reading.weather_code] ?? [null, null];
+        const temperature = `${Math.round(reading.temperature_2m)}${fahrenheit ? '°F' : '°C'}`;
+        this._carWeather = { key, at: Date.now(), type, label, temperature };
+        this.render();
+      })
+      .catch(() => {});
   }
 
   armUnlock() {
@@ -434,6 +479,9 @@ class KiaVehicleCard extends HTMLElement {
     const rawInfo = this._hass.states[this.entityId('data')]?.attributes?.vehicle_data?.lastVehicleInfo;
     const rawStatus = rawInfo?.vehicleStatusRpt?.vehicleStatus;
 
+    const carWeather = this._config.car_weather ? this._carWeather : null;
+    const kiaWeatherIsFixed = FIXED_KIA_WEATHER.has(this.manufacturer);
+
     // Gather data. null always means "unknown": hide it, never assume it's fine.
     const data = {
       // Main stats
@@ -488,11 +536,13 @@ class KiaVehicleCard extends HTMLElement {
         .map(parseFloat).find((value) => !isNaN(value)) ?? null,
 
       // Weather at vehicle location
-      weatherTemp: this.measurement('weatherTemperature') ?? this.measurement('outsideTemperature') ?? (() => {
+      weatherTemp: carWeather?.temperature ?? this.measurement('weatherTemperature') ?? this.measurement('outsideTemperature') ?? (() => {
         const rawTemp = rawInfo?.weather?.outsideTemp?.[1]?.value;
         return UNKNOWN_STATES.has(rawTemp ?? '') ? null : rawTemp;
       })(),
-      weatherType: this.stateOf('weatherType') ?? rawInfo?.weather?.weatherType ?? null,
+      weatherType: carWeather?.type
+        ?? (kiaWeatherIsFixed ? null : this.stateOf('weatherType') ?? rawInfo?.weather?.weatherType ?? null),
+      weatherLabel: carWeather?.label ?? null,
 
       // Service info
       nextService: this.stateOf('nextService'),
@@ -1624,7 +1674,7 @@ class KiaVehicleCard extends HTMLElement {
               </div>
               ` : ''}
               ${data.weatherType !== null ? `
-              <div class="weather-badge" title="${escapeHtml(data.weatherType)}">
+              <div class="weather-badge" title="${escapeHtml(data.weatherLabel ?? data.weatherType)}">
                 <ha-icon icon="mdi:${this.getWeatherIcon(data.weatherType)}"></ha-icon>
               </div>
               ` : ''}
@@ -2084,6 +2134,10 @@ class KiaVehicleCard extends HTMLElement {
     `;
 
     this.addEventListeners();
+
+    const { latitude, longitude } = data;
+    this._carPosition = Number.isFinite(latitude) && Number.isFinite(longitude) ? { latitude, longitude } : null;
+    this.refreshCarWeather();
   }
 
   // Only says Driving when something proves it: a running engine alone could
@@ -2613,6 +2667,13 @@ class KiaVehicleCardEditor extends HTMLElement {
             Show Status Rows (Vehicle Status, Health, Valet)
           </label>
         </div>
+        <div class="editor-row">
+          <label>
+            <input type="checkbox" id="car_weather" ${this._config.car_weather === true ? 'checked' : ''}>
+            Show weather at the car's location
+          </label>
+          <small>Sends the car's approximate location to Open-Meteo</small>
+        </div>
       </div>
     `;
 
@@ -2634,7 +2695,7 @@ class KiaVehicleCardEditor extends HTMLElement {
     });
 
     // Checkbox inputs
-    ['show_controls', 'show_status_row', 'warm_steering_wheel', 'warm_front_left_seat', 'warm_front_right_seat', 'warm_rear_left_seat', 'warm_rear_right_seat'].forEach(field => {
+    ['show_controls', 'show_status_row', 'car_weather', 'warm_steering_wheel', 'warm_front_left_seat', 'warm_front_right_seat', 'warm_rear_left_seat', 'warm_rear_right_seat'].forEach(field => {
       const el = this.querySelector(`#${field}`);
       if (el) {
         el.addEventListener('change', (e) => {
@@ -2668,4 +2729,4 @@ window.customCards.push({
   preview: true
 });
 
-console.info('%c KIA-VEHICLE-CARD %c v2.13.0-beta.2 ', 'background: #3B82F6; color: white; font-weight: bold; border-radius: 4px 0 0 4px;', 'background: #1f2937; color: white; border-radius: 0 4px 4px 0;');
+console.info('%c KIA-VEHICLE-CARD %c v2.13.0-beta.3 ', 'background: #3B82F6; color: white; font-weight: bold; border-radius: 4px 0 0 4px;', 'background: #1f2937; color: white; border-radius: 0 4px 4px 0;');

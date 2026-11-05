@@ -8,6 +8,7 @@ const vm = require('node:vm');
 const fixtures = require('./fixtures/entities.json');
 
 const timers = [];
+let fetcher = () => { throw new Error('unexpected network call'); };
 
 function loadCard() {
   const elements = {};
@@ -30,6 +31,7 @@ function loadCard() {
     HTMLElement,
     console: { info() {} },
     CustomEvent: class { constructor(type, init) { this.type = type; Object.assign(this, init); } },
+    fetch: (...args) => fetcher(...args),
     setTimeout: (fn, ms) => { timers.push({ fn, ms }); return timers.length; },
     clearTimeout: () => {},
     setInterval: () => 1,
@@ -455,6 +457,67 @@ test('tire pressures come from sensors, then the raw payload, and zero means no 
   assert.match(text, /Front Right 33 psi/);
   assert.match(text, /Rear Left 240 kPa/);
   assert.ok(!text.includes('Rear Right'));
+});
+
+function weatherHass(manufacturer = 'Kia USA') {
+  return {
+    states: { 'device_tracker.car_location': entity('not_home', { latitude: 40.7251234, longitude: -73.7059876 }) },
+    entities: { 'device_tracker.car_location': { entity_id: 'device_tracker.car_location', platform: 'kia_uvo', device_id: 'd1', translation_key: 'location' } },
+    devices: { d1: { manufacturer } },
+    config: { unit_system: { temperature: '°F' } },
+  };
+}
+
+const settle = () => new Promise((resolve) => { setImmediate(resolve); });
+
+test('car weather stays off and sends nothing unless opted in', () => {
+  const urls = [];
+  fetcher = (url) => { urls.push(url); return Promise.reject(new Error('no')); };
+  mount({ device_id: 'd1' }, weatherHass());
+  assert.deepEqual(urls, []);
+});
+
+test('car weather shows conditions for the rounded car location', async () => {
+  const urls = [];
+  fetcher = async (url) => {
+    urls.push(url);
+    return { ok: true, json: async () => ({ current: { temperature_2m: 69.6, weather_code: 3 } }) };
+  };
+  const card = mount({ device_id: 'd1', car_weather: true }, weatherHass());
+  await settle();
+  assert.equal(urls.length, 1);
+  assert.match(urls[0], /latitude=40\.73&longitude=-73\.71/);
+  assert.match(urls[0], /temperature_unit=fahrenheit/);
+  assert.match(card.shadowRoot.innerHTML, /title="Cloudy"/);
+  assert.match(card.shadowRoot.innerHTML, /mdi:weather-cloudy/);
+  assert.match(visibleText(card), /70°F/);
+  card.render();
+  card.updateClock();
+  await settle();
+  assert.equal(urls.length, 1, 'stays cached between refreshes');
+});
+
+test('a failed weather lookup hides the badge and is not retried on every update', async () => {
+  let calls = 0;
+  fetcher = async () => { calls += 1; throw new Error('offline'); };
+  const card = mount({ device_id: 'd1', car_weather: true }, weatherHass());
+  await settle();
+  card.render();
+  await settle();
+  assert.equal(calls, 1);
+  assert.ok(!card.shadowRoot.innerHTML.includes('weather-badge"'));
+});
+
+test('Kia USA fixed weather is hidden, other sources still show', () => {
+  fetcher = () => { throw new Error('unexpected network call'); };
+  const withWeather = (manufacturer) => {
+    const hass = weatherHass(manufacturer);
+    hass.states['sensor.car_weather_type'] = entity('Clear');
+    hass.entities['sensor.car_weather_type'] = { entity_id: 'sensor.car_weather_type', platform: 'kia_uvo', device_id: 'd1' };
+    return mount({ device_id: 'd1', vehicle_id: 'car' }, hass).shadowRoot.innerHTML;
+  };
+  assert.ok(!withWeather('Kia USA').includes('<div class="weather-badge"'));
+  assert.ok(withWeather('Kia Canada').includes('<div class="weather-badge"'));
 });
 
 test('controls appear only when they can work', () => {
