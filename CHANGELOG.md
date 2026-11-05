@@ -5,7 +5,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
-Planned as 2.13.0. Available for testing as the `v2.13.0-beta` pre-releases.
+## [2.13.0] - 2026-11-05
 
 ### Added
 - Drive mode and gear while the ignition is on, on integrations that report them (not Kia USA).
@@ -122,7 +122,8 @@ First release in this repository.
 
 Versions 2.5.0 and 2.6.0 came before this repository and were never tagged. 2.6.0 introduced the climate presets, weather badge, heading compass, lamp faults, tire pressure panel, valet mode and map link. 2.5.0 was the first version, with basic monitoring and controls.
 
-[Unreleased]: https://github.com/auadix/ha-kia-card/compare/v2.12.0...HEAD
+[Unreleased]: https://github.com/auadix/ha-kia-card/compare/v2.13.0...HEAD
+[2.13.0]: https://github.com/auadix/ha-kia-card/releases/tag/v2.13.0
 [2.12.0]: https://github.com/auadix/ha-kia-card/releases/tag/v2.12.0
 [2.11.0]: https://github.com/auadix/ha-kia-card/releases/tag/v2.11.0
 [2.10.1]: https://github.com/auadix/ha-kia-card/releases/tag/v2.10.1
