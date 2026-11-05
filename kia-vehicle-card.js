@@ -1,7 +1,7 @@
 /**
  * Kia Vehicle Card for Home Assistant
  * A modern, comprehensive card for Kia/Hyundai vehicles
- * Version: 2.13.0-beta.5
+ * Version: 2.13.0-beta.6
  *
  * Features:
  * - MDI icons (no emojis)
@@ -2626,6 +2626,8 @@ class KiaVehicleCardEditor extends HTMLElement {
         .editor-row small { color: var(--secondary-text-color, #666); font-size: 0.8em; display: block; margin-top: 4px; }
         .editor-section { font-weight: 600; margin: 20px 0 12px; padding-bottom: 6px; border-bottom: 1px solid var(--divider-color, #ccc); }
         .editor-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .editor-row label.check { display: flex; align-items: center; gap: 8px; font-weight: 400; cursor: pointer; }
+        .editor-row label.check input { width: auto; margin: 0; flex: none; }
       </style>
       <div class="editor">
         ${this.renderVehiclePicker()}
@@ -2665,31 +2667,31 @@ class KiaVehicleCardEditor extends HTMLElement {
           Customize which accessories activate with climate presets
         </small>
         <div class="editor-row">
-          <label>
+          <label class="check">
             <input type="checkbox" id="warm_steering_wheel" ${this._config.warm_steering_wheel !== false ? 'checked' : ''}>
             Steering Wheel (Heating only)
           </label>
         </div>
         <div class="editor-row">
-          <label>
+          <label class="check">
             <input type="checkbox" id="warm_front_left_seat" ${this._config.warm_front_left_seat !== false ? 'checked' : ''}>
             Driver Seat
           </label>
         </div>
         <div class="editor-row">
-          <label>
+          <label class="check">
             <input type="checkbox" id="warm_front_right_seat" ${this._config.warm_front_right_seat !== false ? 'checked' : ''}>
             Passenger Seat
           </label>
         </div>
         <div class="editor-row">
-          <label>
+          <label class="check">
             <input type="checkbox" id="warm_rear_left_seat" ${this._config.warm_rear_left_seat === true ? 'checked' : ''}>
             Rear Left Seat
           </label>
         </div>
         <div class="editor-row">
-          <label>
+          <label class="check">
             <input type="checkbox" id="warm_rear_right_seat" ${this._config.warm_rear_right_seat === true ? 'checked' : ''}>
             Rear Right Seat
           </label>
@@ -2714,19 +2716,19 @@ class KiaVehicleCardEditor extends HTMLElement {
 
         <div class="editor-section">Display Options</div>
         <div class="editor-row">
-          <label>
+          <label class="check">
             <input type="checkbox" id="show_controls" ${this._config.show_controls !== false ? 'checked' : ''}>
             Show Controls Row
           </label>
         </div>
         <div class="editor-row">
-          <label>
+          <label class="check">
             <input type="checkbox" id="show_status_row" ${this._config.show_status_row !== false ? 'checked' : ''}>
             Show Status Rows (Vehicle Status, Health, Valet)
           </label>
         </div>
         <div class="editor-row">
-          <label>
+          <label class="check">
             <input type="checkbox" id="car_weather" ${this._config.car_weather === true ? 'checked' : ''}>
             Show weather at the car's location
           </label>
@@ -2787,4 +2789,4 @@ window.customCards.push({
   preview: true
 });
 
-console.info('%c KIA-VEHICLE-CARD %c v2.13.0-beta.5 ', 'background: #3B82F6; color: white; font-weight: bold; border-radius: 4px 0 0 4px;', 'background: #1f2937; color: white; border-radius: 0 4px 4px 0;');
+console.info('%c KIA-VEHICLE-CARD %c v2.13.0-beta.6 ', 'background: #3B82F6; color: white; font-weight: bold; border-radius: 4px 0 0 4px;', 'background: #1f2937; color: white; border-radius: 0 4px 4px 0;');

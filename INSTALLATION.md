@@ -19,7 +19,7 @@ You need the [Kia UVO / Hyundai Bluelink integration](https://github.com/Hyundai
 
 ## Add the card
 
-Edit a dashboard, add **Kia Vehicle Card**, and pick your vehicle from the **Vehicle** list. See the [README](README.md#configuration) for every option.
+Edit a dashboard, add **Kia Vehicle Card**, and pick your vehicle from the **Vehicle** list. See the [README](README.md#configuration) for what each setting does.
 
 ## Check that it loaded
 

@@ -52,13 +52,13 @@ The card only shows what your vehicle actually reports. If a sensor doesn't exis
 - Start and stop climate, and request a fresh update from the car
 - A **More** menu with Find My Car, Horn + Lights and Flash Lights
 
-**Optional weather at the car's location**, from [Open-Meteo](https://open-meteo.com). It's off by default; see `car_weather` below.
+**Optional weather at the car's location**, from [Open-Meteo](https://open-meteo.com). It's off by default and turned on in the card's editor.
 
 ## What you'll see depends on your car
 
 Each region's API reports different data and supports different commands. A few examples:
 
-- **Kia USA** doesn't report drive mode, gear or fuel economy, and the integration can't send horn, lights or valet commands there, so those are hidden. Kia USA also always reports the same weather, so the weather badge only appears with `car_weather` turned on.
+- **Kia USA** doesn't report drive mode, gear or fuel economy, and the integration can't send horn, lights or valet commands there, so those are hidden. Kia USA also always reports the same weather, so the weather badge only appears when **Show weather at the car's location** is turned on.
 - **Valet mode** can only be switched from the card outside the USA. Elsewhere its status is still shown.
 - **Rows like 12V warning level, link status and roadside assistance** appear only with integration builds that provide them.
 
@@ -80,51 +80,37 @@ Each region's API reports different data and supports different commands. A few 
 
 ## Configuration
 
-Add the card to a dashboard, open its editor and pick your vehicle from the **Vehicle** list. Everything else, including the device the controls need, is found automatically.
+Everything is set up in the card's editor. Edit your dashboard, add **Kia Vehicle Card**, and pick your car from the **Vehicle** list. The card finds the rest on its own, including the device the controls need.
 
-In YAML, the minimum is:
+![The card editor, with the live preview on the right](docs/images/editor.png)
 
-```yaml
-type: custom:kia-vehicle-card
-device_id: abc123def456   # easiest to fill in by picking the vehicle in the editor
-```
+<sub>Demo data.</sub>
 
-A fuller example:
+### Vehicle
 
-```yaml
-type: custom:kia-vehicle-card
-device_id: abc123def456
-name: Kia Sorento
-image: https://example.com/my-car.png
-car_weather: true
-cool_temp: 68
-warm_temp: 80
-duration: 10
-warm_seat_level: 7
-```
+- **Vehicle**: the car to show. Pick it here and the card finds its sensors, even if you've renamed them.
+- **Entity Prefix**: leave this empty unless your car isn't found. Then enter the start of its entity names, for example `my_car` from `sensor.my_car_fuel_level`.
+- **Display Name**: the name in the card's header.
+- **Vehicle Image URL**: a picture of your car. Without one, the card draws a diagram that shows each door's state.
 
-### Options
+### Climate presets
 
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `device_id` | string | — | Your vehicle's device. Picking the vehicle in the editor fills this in. |
-| `vehicle_id` | string | — | Entity prefix, e.g. `my_car` from `sensor.my_car_fuel_level`. Only needed if your vehicle isn't found automatically; can be used instead of `device_id`. |
-| `name` | string | `My Kia` | Name shown in the header. |
-| `image` | string | — | URL of a vehicle image. Without one, the card draws its own car diagram. |
-| `show_controls` | boolean | `true` | Show the control buttons. |
-| `show_status_row` | boolean | `true` | Show the status rows (vehicle status, health, tire pressure, valet). |
-| `car_weather` | boolean | `false` | Show the weather at the car's location. Sends the car's approximate location, rounded to about 1 km, to Open-Meteo. |
-| `cool_temp` | number | 68°F / 19°C | Temperature for the Cool preset, in your region's unit. |
-| `warm_temp` | number | 80°F / 26°C | Temperature for the Warm preset. |
-| `custom_temp` | number | 72°F / 22°C | Temperature for the Custom preset. |
-| `duration` | number | `10` | How long climate runs, in minutes (1–30). |
-| `warm_steering_wheel` | boolean | `true` | Warm preset: heat the steering wheel. |
-| `warm_front_left_seat` | boolean | `true` | Warm preset: driver's seat. |
-| `warm_front_right_seat` | boolean | `true` | Warm preset: front passenger seat. |
-| `warm_rear_left_seat` | boolean | `false` | Warm preset: rear left seat. |
-| `warm_rear_right_seat` | boolean | `false` | Warm preset: rear right seat. |
-| `warm_seat_level` | number | `6` | Seat level for the Warm preset: 6 = Low, 7 = Medium, 8 = High. |
-| `warm_steering_level` | number | `2` | Steering wheel level for the Warm preset: 1 = Low, 2 = High. |
+- **Cool, Warm and Custom Temp**: the temperature each preset sets, in your region's unit (°F in the USA, °C elsewhere).
+- **Duration**: how long climate runs, in minutes.
+
+### Climate preset accessories
+
+What the **Warm** preset turns on with the heat:
+
+- **Steering Wheel**, **Driver Seat**, **Passenger Seat**, **Rear Left Seat** and **Rear Right Seat**
+- **Seat Level**: Low, Medium or High
+- **Steering Wheel Level**: Low or High
+
+### Display options
+
+- **Show Controls Row**: the lock, climate, More and Update buttons.
+- **Show Status Rows**: vehicle status, health, tire pressure and valet.
+- **Show weather at the car's location**: off by default. See [Privacy](#privacy).
 
 ## Requirements
 
@@ -142,7 +128,7 @@ The [Kia UVO / Hyundai Bluelink integration](https://github.com/Hyundai-Kia-Conn
 
 ## Privacy
 
-The card talks only to your Home Assistant, with one exception: with `car_weather` on, it asks Open-Meteo for the weather at the car's approximate location, about every 30 minutes. Opening the location link sends the coordinates to Google Maps.
+The card talks only to your Home Assistant, with one exception: with **Show weather at the car's location** turned on, it asks Open-Meteo for the weather at the car's approximate location, about every 30 minutes. Opening the location link sends the coordinates to Google Maps.
 
 ## Contributing
 

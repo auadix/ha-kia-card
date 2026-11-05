@@ -13,10 +13,10 @@ Planned as 2.13.0. Available for testing as the `v2.13.0-beta` pre-releases.
 - A 12V battery fault warning.
 - Charging power and time to full while an EV is charging.
 - Tire pressure readings on Kia USA, read from the vehicle data the integration already provides.
-- Optional weather at the car's location (`car_weather`), from Open-Meteo. Off by default because it shares the car's approximate location.
+- Optional weather at the car's location, from Open-Meteo. Turn it on in the card's editor. Off by default because it shares the car's approximate location.
 - A second tap to confirm unlocking. Locking still takes one tap.
 - Seat heater sensors now feed the "Climate Active" row on vehicles that don't send the detailed climate data.
-- Screenshots in the README.
+- Screenshots in the README, including the card editor.
 
 ### Changed
 - Distances use each sensor's own unit, and the service colours still work in kilometres.
@@ -26,11 +26,12 @@ Planned as 2.13.0. Available for testing as the `v2.13.0-beta` pre-releases.
 - Controls only appear when the integration can perform them. On Kia USA, Find My Car, Flash Lights and the valet toggle are hidden because those commands aren't available.
 - "Horn" is now "Horn + Lights", since there's no horn-only command.
 - The card only redraws when its own entities change, and "Updated … ago" refreshes on its own.
-- The weather badge is hidden on Kia USA unless `car_weather` is on, because Kia reports the same weather there regardless of conditions.
+- The weather badge is hidden on Kia USA unless weather at the car's location is turned on, because Kia reports the same weather there regardless of conditions.
 - Temperatures are written the way Home Assistant writes them, with a space before the unit (68 °F).
-- Rewrote the documentation.
+- Rewrote the documentation. Setup is described through the card's editor.
 
 ### Fixed
+- Checkboxes in the card editor sat on their own line, away from their labels.
 - Flash Lights no longer sounds the horn.
 - The valet toggle now sends a real command where the integration supports it.
 
