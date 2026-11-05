@@ -1,7 +1,7 @@
 /**
  * Kia Vehicle Card for Home Assistant
  * A modern, comprehensive card for Kia/Hyundai vehicles
- * Version: 2.13.0-beta.1
+ * Version: 2.13.0-beta.2
  *
  * Features:
  * - MDI icons (no emojis)
@@ -583,12 +583,20 @@ class KiaVehicleCard extends HTMLElement {
     const isEV = data.evBattery !== null && data.evBattery !== '0';
     const isFullEV = isEV && data.fuel === null;
 
+    // Pressure sensor first, then the raw payload, which only Kia USA sends (in psi).
+    // Zero is the integrations' "no reading" value, not a flat tire.
+    const tirePressure = (key, row, side) => {
+      if (parseFloat(this.stateOf(key)) > 0) return this.measurement(key);
+      const raw = rawStatus?.tirePressureDetail?.[row]?.[side]?.tire?.pressure;
+      return raw > 0 ? `${raw} psi` : null;
+    };
+
     // Tires: show the section if anything at all is known about them
     const tires = [
-      { axle: 'Front', side: 'Left', warning: data.tireFrontLeft, pressure: this.measurement('tirePressureFrontLeft') },
-      { axle: 'Front', side: 'Right', warning: data.tireFrontRight, pressure: this.measurement('tirePressureFrontRight') },
-      { axle: 'Rear', side: 'Left', warning: data.tireRearLeft, pressure: this.measurement('tirePressureRearLeft') },
-      { axle: 'Rear', side: 'Right', warning: data.tireRearRight, pressure: this.measurement('tirePressureRearRight') },
+      { axle: 'Front', side: 'Left', warning: data.tireFrontLeft, pressure: tirePressure('tirePressureFrontLeft', 'row1', 'Left') },
+      { axle: 'Front', side: 'Right', warning: data.tireFrontRight, pressure: tirePressure('tirePressureFrontRight', 'row1', 'Right') },
+      { axle: 'Rear', side: 'Left', warning: data.tireRearLeft, pressure: tirePressure('tirePressureRearLeft', 'row2', 'Left') },
+      { axle: 'Rear', side: 'Right', warning: data.tireRearRight, pressure: tirePressure('tirePressureRearRight', 'row2', 'Right') },
     ].filter((tire) => tire.warning !== null || tire.pressure !== null);
     const hasTireStatus = data.tirePressureWarning !== null || tires.some((tire) => tire.warning !== null);
     const tireWarning = data.tirePressureWarning === true || tires.some((tire) => tire.warning === true);
@@ -2660,4 +2668,4 @@ window.customCards.push({
   preview: true
 });
 
-console.info('%c KIA-VEHICLE-CARD %c v2.13.0-beta.1 ', 'background: #3B82F6; color: white; font-weight: bold; border-radius: 4px 0 0 4px;', 'background: #1f2937; color: white; border-radius: 0 4px 4px 0;');
+console.info('%c KIA-VEHICLE-CARD %c v2.13.0-beta.2 ', 'background: #3B82F6; color: white; font-weight: bold; border-radius: 4px 0 0 4px;', 'background: #1f2937; color: white; border-radius: 0 4px 4px 0;');

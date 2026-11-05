@@ -438,6 +438,25 @@ test('tires: unknown is neither OK nor a warning, an open warning still shows', 
   assert.equal((card.shadowRoot.innerHTML.match(/class="tire /g) || []).length, 1);
 });
 
+test('tire pressures come from sensors, then the raw payload, and zero means no reading', () => {
+  const tire = (pressure) => ({ tire: { pressureLow: 0, pressure } });
+  const raw = { row1: { Left: tire(34), Right: tire(33) }, row2: { Left: tire(32), Right: tire(0) } };
+  const vehicle_data = { lastVehicleInfo: { vehicleStatusRpt: { vehicleStatus: { tirePressureDetail: raw } } } };
+  const states = {
+    'sensor.car_data': entity('on', { vehicle_data }),
+    'sensor.car_tire_pressure_rear_left': entity('240', { unit_of_measurement: 'kPa' }),
+    'sensor.car_tire_pressure_front_left': entity('0', { unit_of_measurement: 'kPa' }),
+  };
+  const card = mount({ vehicle_id: 'car' }, { states });
+  card._showTirePressure = true;
+  card.render();
+  const text = visibleText(card);
+  assert.match(text, /Front Left 34 psi/);
+  assert.match(text, /Front Right 33 psi/);
+  assert.match(text, /Rear Left 240 kPa/);
+  assert.ok(!text.includes('Rear Right'));
+});
+
 test('controls appear only when they can work', () => {
   const states = { 'sensor.car_odometer': entity('1') };
   const none = visibleText(mount({ vehicle_id: 'car' }, { states, services: {} }));
