@@ -58,7 +58,8 @@ The card only shows what your vehicle actually reports. If a sensor doesn't exis
 
 Each region's API reports different data and supports different commands. A few examples:
 
-- **Kia USA** doesn't report drive mode, gear or fuel economy, and the integration can't send horn, lights or valet commands there, so those are hidden. Kia USA also always reports the same weather, so the weather badge only appears when **Show weather at the car's location** is turned on.
+- **Kia USA** doesn't report drive mode, gear or fuel economy, and the integration can't send valet commands there, so those are hidden. Kia USA also always reports the same weather, so the weather badge only appears when **Show weather at the car's location** is turned on.
+- **Flash Lights** is hidden on Kia USA, which sounds the horn and flashes the lights together and has no lights-only command. Find My Car and Horn + Lights both work there.
 - **Valet mode** can only be switched from the card outside the USA. Elsewhere its status is still shown.
 - **Rows like 12V warning level, link status and roadside assistance** appear only with integration builds that provide them.
 

@@ -1,7 +1,7 @@
 /**
  * Kia Vehicle Card for Home Assistant
  * A modern, comprehensive card for Kia/Hyundai vehicles
- * Version: 2.13.0
+ * Version: 2.14.0
  *
  * Features:
  * - MDI icons (no emojis)
@@ -45,7 +45,10 @@ const KM_TO_MILES = 0.621371;
 
 // Commands the API library has no implementation for. On a fork these fail
 // silently, so the card can't rely on an error to show they don't work.
-const NO_HAZARD_COMMANDS = new Set(['Kia USA']);
+// Kia USA sends the horn and the lights together and has no lights-only
+// command, so Flash Lights is hidden there while Horn + Lights works.
+const NO_HORN_COMMANDS = new Set();
+const NO_FLASH_COMMANDS = new Set(['Kia USA']);
 const NO_VALET_COMMANDS = /USA$/;
 
 // Kia USA sends the same weather whatever the sky is doing, so it can't be shown
@@ -697,8 +700,13 @@ class KiaVehicleCard extends HTMLElement {
     const canLock = data.locked !== null;
     const unlockArmed = this._unlockArmed && data.locked === true;
     const canClimate = this.hasService(climateRunning ? 'stop_climate' : 'start_climate');
-    const canQuickActions = this.hasService('start_hazard_lights_and_horn')
-      && this.hasService('start_hazard_lights') && !NO_HAZARD_COMMANDS.has(this.manufacturer);
+    // Horn and lights are gated apart, because Kia USA has the combined
+    // command but no lights-only one.
+    const canHornLights = this.hasService('start_hazard_lights_and_horn')
+      && !NO_HORN_COMMANDS.has(this.manufacturer);
+    const canFlashLights = this.hasService('start_hazard_lights')
+      && !NO_FLASH_COMMANDS.has(this.manufacturer);
+    const canQuickActions = canHornLights || canFlashLights;
     const canSetValet = this.hasService('start_valet_mode') && this.hasService('stop_valet_mode')
       && !NO_VALET_COMMANDS.test(this.manufacturer);
     const temperatureUnit = this.temperatureUnit;
@@ -1984,6 +1992,7 @@ class KiaVehicleCard extends HTMLElement {
         ${this._showQuickActions && canQuickActions ? `
         <div class="quick-actions-menu">
           <div class="quick-actions-grid">
+            ${canHornLights ? `
             <div class="quick-action-btn" id="qa-find-car">
               <ha-icon icon="mdi:car-search"></ha-icon>
               <span class="quick-action-label">Find My Car</span>
@@ -1992,10 +2001,13 @@ class KiaVehicleCard extends HTMLElement {
               <ha-icon icon="mdi:bullhorn"></ha-icon>
               <span class="quick-action-label">Horn + Lights</span>
             </div>
+            ` : ''}
+            ${canFlashLights ? `
             <div class="quick-action-btn" id="qa-lights">
               <ha-icon icon="mdi:car-light-high"></ha-icon>
               <span class="quick-action-label">Flash Lights</span>
             </div>
+            ` : ''}
           </div>
         </div>
         ` : ''}

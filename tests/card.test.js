@@ -381,6 +381,22 @@ test('each quick action calls the command it names', () => {
   assert.match(visibleText(card), /Horn \+ Lights/);
 });
 
+test('Kia USA gets Horn + Lights but not the lights-only button', () => {
+  const kiaUsa = regionCard('Kia USA');
+  kiaUsa._showQuickActions = true;
+  kiaUsa.render();
+  const text = visibleText(kiaUsa);
+  assert.match(text, /Horn \+ Lights/);
+  assert.match(text, /Find My Car/);
+  assert.ok(!text.includes('Flash Lights'));
+
+  // Everywhere else keeps both.
+  const europe = regionCard('Kia Europe');
+  europe._showQuickActions = true;
+  europe.render();
+  assert.match(visibleText(europe), /Flash Lights/);
+});
+
 function regionCard(manufacturer) {
   return mount({ device_id: 'd1' }, {
     services: allServices,
@@ -394,8 +410,10 @@ function regionCard(manufacturer) {
 }
 
 test('commands the library cannot send are hidden, status stays', () => {
+  // Kia USA sends the horn and the lights together, so it gets More and
+  // Horn + Lights but no lights-only button.
   const kiaUsa = regionCard('Kia USA');
-  assert.ok(!visibleText(kiaUsa).includes('More'));
+  assert.match(visibleText(kiaUsa), /More/);
   assert.match(visibleText(kiaUsa), /Valet Mode Inactive/);
   assert.ok(!kiaUsa.shadowRoot.innerHTML.includes('valet-toggle'));
 

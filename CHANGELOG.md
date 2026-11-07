@@ -5,6 +5,14 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [2.14.0] - 2026-11-07
+
+### Added
+- Find My Car and Horn + Lights now work on Kia USA. The endpoint is `rems/hrl/on`, found in the Kia Access app's own list of API paths and confirmed against a 2025 Sorento. Needs an integration build that sends it.
+
+### Changed
+- Horn and lights are now gated separately instead of together. Kia USA sounds the horn and flashes the lights in one command and has no lights-only one, so Flash Lights is hidden there while the other two show.
+
 ## [2.13.0] - 2026-11-05
 
 ### Added
